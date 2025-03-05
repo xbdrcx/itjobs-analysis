@@ -1,0 +1,65 @@
+import streamlit as st
+import pandas as pd
+import asyncio, platform
+from scraper import scrape
+
+st.set_page_config(page_icon="🕵️‍♂️", page_title="ITJobs Scraper")
+st.title("ITJobs Scraper 🕵️‍♂️")
+st.caption("Search and analyze the IT job market in Portugal.")
+st.markdown("Powered by [ITJobs](https://www.itjobs.pt/)")
+
+# Windows Async Loop Fix
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+# Initialize session state
+if "first_run" not in st.session_state:
+    st.session_state.first_run = True
+
+# Input for Keywords
+keys_input = st.text_input("Enter Keywords (comma separated)", "typescript,frontend,data engineer")
+keys = [k.strip() for k in keys_input.split(",") if k.strip()]
+
+def run_scraper(keywords=None):
+    st.info("Running scraper... This may take a while ⏳")
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    result_file = loop.run_until_complete(scrape(keywords))
+
+    if result_file:
+        st.success("Scraping finished ✅")
+        data = pd.read_csv(result_file)
+
+        # Create clickable links for Streamlit table
+        data["Offer"] = data["URL"].apply(
+            lambda url: f'<a href="{url}" target="_blank">🔗 Link</a>' if pd.notnull(url) else ""
+        )
+
+        # Drop the URL column
+        data = data.drop(columns=["URL"])
+
+        st.write("### Scraped Jobs:")
+
+        # Display the table without the index column using markdown and HTML
+        table_html = data.to_html(index=False, escape=False)  # index=False hides the index
+        st.markdown(table_html, unsafe_allow_html=True)
+
+        st.download_button(
+            label="Download CSV 📄",
+            data=data.to_csv(index=False),
+            file_name="scraped_jobs.csv",
+            mime="text/csv",
+        )
+
+# Automatically run scraper on first app launch
+if st.session_state.first_run:
+    run_scraper([])
+    st.session_state.first_run = False
+
+if st.button("Run Scraper"):
+    if not keys:
+        st.warning("Please enter at least one keyword.")
+    else:
+        run_scraper(keys)
