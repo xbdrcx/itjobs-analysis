@@ -1,13 +1,13 @@
 # python -m pip install playwright
 # python -m playwright install
-import csv, time
+import csv
 from playwright.async_api import async_playwright
 
 BASE_URL = "https://www.itjobs.pt/emprego?location=14&date=7d&page="
 
 async def scrape(keys):
-    keys = [k.lower() for k in keys]  # Normalize keys
-    jobs = []
+    keys = [k.lower() for k in keys]  # Normalize keywords
+    jobs = []  # List to store all jobs 🔥
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -16,6 +16,7 @@ async def scrape(keys):
         await page.wait_for_selector("ul.pagination")
 
         pagination = await page.query_selector("ul.pagination")
+        last_page_number = 1
         if pagination:
             page_numbers = await pagination.query_selector_all("li")
             if len(page_numbers) > 1:
@@ -49,15 +50,15 @@ async def scrape(keys):
                         if job_url:
                             job_url = "https://www.itjobs.pt" + job_url
 
-                        # Filter only if title contains any of the keywords
+                        # Filter by keywords 🔥
                         if not keys or any(k in job_title.lower() for k in keys):
                             jobs.append({
                                 "Job Title": job_title,
                                 "Company": company_name,
                                 "Posted Date": date_text,
-                                "URL": job_url
+                                "URL": job_url,
                             })
 
         await browser.close()
-        print(f"Scraped {len(jobs)} jobs")
-        return jobs
+        print(f"Total jobs scraped: {len(jobs)}")
+        return jobs  # Now returning the list of jobs 🎯
