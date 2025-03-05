@@ -26,11 +26,11 @@ def run_scraper(keywords=None):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    result_file = loop.run_until_complete(scrape(keywords))
+    jobs = loop.run_until_complete(scrape(keywords))  # Now it returns a list of dictionaries 🔥
 
-    if result_file:
+    if jobs:
         st.success("Scraping finished ✅")
-        data = pd.read_csv(result_file)
+        data = pd.DataFrame(jobs)  # Convert list of dictionaries into a DataFrame
 
         # Create clickable links for Streamlit table
         data["Offer"] = data["URL"].apply(
@@ -42,10 +42,11 @@ def run_scraper(keywords=None):
 
         st.write("### Scraped Jobs:")
 
-        # Display the table without the index column using markdown and HTML
-        table_html = data.to_html(index=False, escape=False)  # index=False hides the index
+        # Display the table without the index column using markdown
+        table_html = data.to_html(index=False, escape=False)
         st.markdown(table_html, unsafe_allow_html=True)
 
+        # Download CSV button
         st.download_button(
             label="Download CSV 📄",
             data=data.to_csv(index=False),
