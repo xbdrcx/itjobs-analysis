@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
 import asyncio, platform
-from scraper import scrape
+from scraper import scrape, setup_playwright
+
+setup_playwright()
 
 st.set_page_config(page_icon="🕵️‍♂️", page_title="ITJobs Scraper")
 st.title("ITJobs Scraper 🕵️‍♂️")

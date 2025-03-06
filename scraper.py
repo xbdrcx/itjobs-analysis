@@ -1,7 +1,11 @@
 # python -m pip install playwright
 # python -m playwright install
-import csv
 from playwright.async_api import async_playwright
+
+async def setup_playwright():
+    from playwright.__main__ import main
+    main(["install", "chromium"])  # Automatically installs chromium if not installed
+
 
 BASE_URL = "https://www.itjobs.pt/emprego?location=14&date=7d&page="
 
