@@ -1,11 +1,12 @@
 # python -m pip install playwright
 # python -m playwright install
 from playwright.async_api import async_playwright
+import os, subprocess
 
-async def setup_playwright():
-    from playwright.__main__ import main
-    main(["install", "chromium"])  # Automatically installs chromium if not installed
-
+async def install_playwright():
+    if not os.path.exists("/home/appuser/.cache/ms-playwright"):
+        print("Installing Playwright browsers... 🚀")
+        subprocess.run(["playwright", "install", "chromium"])
 
 BASE_URL = "https://www.itjobs.pt/emprego?location=14&date=7d&page="
 
@@ -13,6 +14,8 @@ async def scrape(keys):
     keys = [k.lower() for k in keys]  # Normalize keywords
     jobs = []  # List to store all jobs 🔥
 
+    await install_playwright()
+    
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
