@@ -13,9 +13,10 @@ BASE_URL = "https://www.itjobs.pt/emprego?location=14&date=7d&page="
 async def scrape(keys):
     keys = [k.lower() for k in keys]  # Normalize keywords
     jobs = []  # List to store all jobs 🔥
+    seen_urls = set()  # Set to track URLs of already scraped jobs
 
     await install_playwright()
-    
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
@@ -59,12 +60,15 @@ async def scrape(keys):
 
                         # Filter by keywords 🔥
                         if not keys or any(k in job_title.lower() for k in keys):
-                            jobs.append({
-                                "Job Title": job_title,
-                                "Company": company_name,
-                                "Posted Date": date_text,
-                                "URL": job_url,
-                            })
+                            # Skip job if URL has already been added (to avoid duplicates)
+                            if job_url not in seen_urls:
+                                seen_urls.add(job_url)
+                                jobs.append({
+                                    "Job Title": job_title,
+                                    "Company": company_name,
+                                    "Posted Date": date_text,
+                                    "URL": job_url,
+                                })
 
         await browser.close()
         print(f"Total jobs scraped: {len(jobs)}")

@@ -54,6 +54,13 @@ def run_scraper(keywords=None):
             mime="text/csv",
         )
 
+        # Create company offer count table
+        company_counts = data["Company"].value_counts().reset_index()
+        company_counts.columns = ["Company", "Number of Offers"]
+
+        st.write("### Offers per Company:")
+        st.dataframe(company_counts)
+
 # Automatically run scraper on first app launch
 if st.session_state.first_run:
     run_scraper([])
