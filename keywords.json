@@ -1,0 +1,4 @@
+{
+    "technologies": ["python", "typescript", "react", "docker", "aws", "nodejs", "java", "kubernetes", "sql", "angular", "flutter", "django", "tensorflow", "pytorch"],
+    "roles": ["frontend developer", "backend developer", "data engineer", "data scientist", "full stack developer", "machine learning engineer", "software engineer", "devops engineer", "mobile developer"]
+}  

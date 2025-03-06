@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import asyncio, platform
 from scraper import scrape
+from analyzer import extract_entities
 
 st.set_page_config(page_icon="🕵️‍♂️", page_title="ITJobs Scraper")
 st.title("ITJobs Scraper 🕵️‍♂️")
@@ -60,6 +61,16 @@ def run_scraper(keywords=None):
 
         st.write("### Offers per Company:")
         st.dataframe(company_counts)
+
+        # Extract Technologies and Roles
+        st.write("### Detected Technologies and Roles")
+        tech_df, role_df = extract_entities(data)
+        
+        st.write("#### Top Technologies")
+        st.bar_chart(tech_df.set_index("Technology"))
+
+        st.write("#### Roles Distribution")
+        st.bar_chart(role_df.set_index("Role"))
 
 # Automatically run scraper on first app launch
 if st.session_state.first_run:
