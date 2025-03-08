@@ -6,6 +6,7 @@ from analyzer import extract_entities
 
 # TODO
 # - Adicionar todas as cidades no ITJOBS a uma combobox
+# - Verificar uso legal de dados do ITJOBS
 # - 
 
 st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer")
@@ -55,7 +56,7 @@ if st.button("Execute", key="run_scraper_button") or st.session_state.first_run:
 
         data = data.drop(columns=["URL"])
 
-        st.write("### Scraped Jobs:")
+        st.write("###", len(jobs), "offer(s) found")
         table_html = data.to_html(index=False, escape=False)
         st.markdown(table_html, unsafe_allow_html=True)
 
@@ -69,7 +70,7 @@ if st.button("Execute", key="run_scraper_button") or st.session_state.first_run:
         company_counts = data["Company"].value_counts().reset_index()
         company_counts.columns = ["Company", "Number of Offers"]
         st.write("### Offers per Company:")
-        st.dataframe(company_counts)
+        st.dataframe(company_counts, use_container_width=True, hide_index=True)
 
         st.write("### Detected Technologies and Roles")
         tech_df, role_df = extract_entities(data)

@@ -1,7 +1,13 @@
 # python -m pip install playwright
 # python -m playwright install
 from playwright.async_api import async_playwright
+from dotenv import load_dotenv
 import os, subprocess
+
+load_dotenv()
+api_key = os.getenv("API_KEY")
+if api_key:
+    print("API KEY loaded securely :D")
 
 async def install_playwright():
     if not os.path.exists("/home/appuser/.cache/ms-playwright"):
