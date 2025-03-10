@@ -7,8 +7,7 @@ from datetime import datetime
 import plotly.express as px
 import streamlit as st
 import pandas as pd
-import requests, os, torch, spacy, base64, time
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import requests, os, spacy, base64, time
 
 # TODO
 # - Adicionar traduções
