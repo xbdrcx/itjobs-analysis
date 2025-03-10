@@ -253,7 +253,7 @@ if jobs:
     if selected_location_name == "All":
         st.write("### Location Distribution")
         location_df = pd.DataFrame(list(location_distribution.items()), columns=["Location", "Count"])
-        tech_fig = px.bar(location_df, x="Location", y="Count", title="Location Distribution", color="Location")
+        tech_fig = px.bar(location_df, x="Location", y="Count", color="Location")
         st.plotly_chart(tech_fig)
         # Show top 3 techs
         top_loc = sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
@@ -283,7 +283,7 @@ if jobs:
         # Display technology distribution
         st.write("### Technology Distribution")
         tech_distribution_df = pd.DataFrame(list(tech_distribution.items()), columns=["Tech", "Count"])
-        tech_fig = px.bar(tech_distribution_df, x="Tech", y="Count", title="Tech Distribution", color="Tech")
+        tech_fig = px.bar(tech_distribution_df, x="Tech", y="Count", color="Tech")
         st.plotly_chart(tech_fig)
         # st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
         # Show top 3 techs
@@ -296,7 +296,7 @@ if jobs:
         # Display role distribution
         st.write("### Role Distribution")
         role_distribution_df = pd.DataFrame(list(role_distribution.items()), columns=["Role", "Count"])
-        role_fig = px.bar(role_distribution_df, x="Role", y="Count", title="Role Distribution", color="Role")
+        role_fig = px.bar(role_distribution_df, x="Role", y="Count", color="Role")
         st.plotly_chart(role_fig)
         # Show top 3 roles
         top_roles = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
@@ -305,6 +305,7 @@ if jobs:
         st.dataframe(top_roles_df, hide_index=True)
 
     elapsed_time = calculate_elapsed_time(st.session_state.start_time)
-    st.write(f"Data fetched in {elapsed_time}")
+    st.caption(f"Data fetched in {elapsed_time}")
+
 else:
     st.warning("No jobs found.")
