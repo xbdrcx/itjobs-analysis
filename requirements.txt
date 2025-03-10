@@ -77,7 +77,6 @@ tenacity==9.0.0
 thinc==8.3.4
 tokenizers==0.21.0
 toml==0.10.2
-torch==2.5.1+cu118
 tornado==6.4.2
 tqdm==4.67.1
 transformers==4.49.0
