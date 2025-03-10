@@ -18,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # - Train own model to recognize TECHNOLOGIES and ROLES in Job Titles
 # - 
 
-st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer")
+st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer", layout="wide")
 st.title("ITJobs Analyzer 🕵️‍♂️💻")
 st.caption("Use AI and Data Visualization techniques to search, analyze, and extract insight from Portugal's IT job market.")
 st.markdown(
@@ -187,6 +187,19 @@ if jobs:
     # Location Distribution Bar Chart (only if "All" is selected)
     if selected_location_name == "All":
         st.write("### Location Distribution")
+        # st.subheader(f"Top 3 Locations:", sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3])
+
+        # Get the top 3 locations
+        top_3_locations = sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
+
+        # Display the top 3 locations
+        st.write("### Top 3 Locations")
+        if top_3_locations:
+            for location, count in top_3_locations:
+                st.write(f"📍 {location}: {count} offer(s)")
+        else:
+            st.write("No location data available.")
+
         location_df = pd.DataFrame(list(location_distribution.items()), columns=["Location", "Count"])
         location_df = location_df.sort_values(by="Count", ascending=False)
         st.bar_chart(location_df.set_index("Location"))
