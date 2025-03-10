@@ -21,8 +21,9 @@ import requests, os, spacy, base64, time
 # - 
 
 # Load environment variables (for API_KEY)
-load_dotenv()
-api_key = os.getenv("API_KEY")
+# load_dotenv()
+# api_key = os.getenv("API_KEY")
+api_key = st.secrets["API_KEY"]
 
 st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer", layout="wide")
 st.title("ITJobs Analyzer 🕵️‍♂️💻")
