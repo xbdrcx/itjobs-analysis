@@ -18,6 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # - Corrigir distribuiçoes de Tech/Roles (estao misturados)
 # - Treinar modelo NER para reconhecimento de TECNOLOGIAS e ROLES
 # - Escolher entre Plotly, Matplotlib e Seaborn para as visualizações
+# - Adicionar botao "Download CSV"
 # - 
 
 # Load environment variables (for API_KEY)
@@ -26,8 +27,9 @@ api_key = os.getenv("API_KEY")
 
 st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer", layout="wide")
 st.title("ITJobs Analyzer 🕵️‍♂️💻")
-st.html("<caption>This application uses data from the ITJobs <b>API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to analyze and extract meaningful insights from Portugal's IT job market.</caption>")
+st.html("<caption>This application uses <b>data</b> from the ITJobs <b>API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to analyze and extract meaningful <b>insights</b> from <b>Portugal's IT job market</b>.</caption>")
 st.html("<b>Disclaimer:</b> This application is for informational purposes only and is not affiliated with ITJobs.pt.")
+st.caption("The data does not necessary represent the entirety of Portugal's job market.")
 st.markdown(
     f"""
     <div style="display: flex; align-items: center; gap: 20px;">
