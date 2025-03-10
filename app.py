@@ -1,9 +1,10 @@
+# ITJOBS API: https://www.itjobs.pt/api
 # pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu118
 # pip install --upgrade typing_extensions
 # spacy download en_core_web_lg
 from dotenv import load_dotenv
 from datetime import datetime
-import matplotlib.pyplot as plt
+import plotly.express as px
 import streamlit as st
 import pandas as pd
 import requests, os, torch, spacy, base64, time
@@ -16,6 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # - Adicionar à tabela caso seja "Contrato", "Estágio", etc
 # - Corrigir distribuiçoes de Tech/Roles (estao misturados)
 # - Treinar modelo NER para reconhecimento de TECNOLOGIAS e ROLES
+# - Escolher entre Plotly, Matplotlib e Seaborn para as visualizações
 # - 
 
 # Load environment variables (for API_KEY)
@@ -94,6 +96,7 @@ def format_date(date_str):
     return "N/A"
 
 # Fetch all available cities and their respective location codes
+@st.cache_data
 def fetch_cities():
     url = "https://api.itjobs.pt/location/list.json"
     params = {"api_key": api_key}
@@ -141,6 +144,7 @@ def fetch_cities():
         return {}
 
 # Fetch job listings and classify as full-time or part-time
+@st.cache_data
 def fetch_all_jobs(location_code=None):
     url = "https://api.itjobs.pt/job/list.json"
     all_jobs = []
@@ -191,6 +195,18 @@ locations = fetch_cities()
 selected_location_name = st.selectbox("Select location:", ["All"] + list(locations.keys()))
 selected_location_code = locations.get(selected_location_name)
 
+# Function to calculate the elapsed time
+def calculate_elapsed_time(start_time):
+    elapsed_time = time.time() - start_time
+    return f"{elapsed_time:.2f} seconds"
+
+# Place to store start time
+if 'start_time' not in st.session_state:
+    st.session_state.start_time = time.time()  # Store start time when the app runs
+
+# Measure elapsed time each time the user selects a new option
+st.session_state.start_time = time.time()  # Reset start time when combobox option changes
+
 # Fetch job listings
 jobs = fetch_all_jobs(location_code=selected_location_code if selected_location_name != "All" else None)
 
@@ -239,19 +255,25 @@ if jobs:
     # Display job offers
     offers_df = pd.DataFrame(job_offers)
     st.write("###", len(jobs), "offer(s) found")
-    st.dataframe(offers_df, use_container_width=True)
+    st.dataframe(offers_df, use_container_width=True, hide_index=True)
 
     # Display company counts
     company_counts_df = pd.DataFrame(list(company_counts.items()), columns=["Company", "Number of Offers"])
     st.write("###", len(company_counts_df), "unique companies")
-    st.dataframe(company_counts_df.sort_values(by="Number of Offers", ascending=False), use_container_width=True)
+    st.dataframe(company_counts_df.sort_values(by="Number of Offers", ascending=False), use_container_width=True, hide_index=True)
 
     # Location Distribution
     if selected_location_name == "All":
         st.write("### Location Distribution")
         location_df = pd.DataFrame(list(location_distribution.items()), columns=["Location", "Count"])
-        st.bar_chart(location_df.set_index("Location"))
-
+        tech_fig = px.bar(location_df, x="Location", y="Count", title="Location Distribution", color="Location")
+        st.plotly_chart(tech_fig)
+        # Show top 3 techs
+        top_loc = sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_locs_df = pd.DataFrame(top_loc, columns=["Location", "Count"])  # Explicitly set the column names
+        st.write("### TOP Locations")
+        st.dataframe(top_locs_df, hide_index=True)
+        
     # Remote vs Non-Remote job count
     remote_count = sum(1 for job in jobs if job["allowRemote"])
     non_remote_count = len(jobs) - remote_count
@@ -261,37 +283,41 @@ if jobs:
     with col1:
         st.write("### Allow-Remote vs. In-Person")
         remote_vs_non_remote_df = pd.DataFrame({"Type": ["Allow Remote", "In-Person"], "Count": [remote_count, non_remote_count]})
-        fig, ax = plt.subplots()
-        ax.pie(remote_vs_non_remote_df['Count'], labels=remote_vs_non_remote_df['Type'], autopct='%1.1f%%', startangle=90, colors=plt.cm.Pastel2.colors)
-        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-        st.pyplot(fig)
+        fig = px.pie(remote_vs_non_remote_df, values="Count", names="Type", hole=0.2)
+        st.plotly_chart(fig)
 
     with col2:
         st.write("### Full-Time vs. Part-Time")
         full_time_part_time_df = pd.DataFrame({"Type": ["Full-Time", "Part-Time"], "Count": [full_time_count, part_time_count]})
-        fig, ax = plt.subplots()
-        ax.pie(full_time_part_time_df['Count'], labels=full_time_part_time_df['Type'], autopct='%1.1f%%', startangle=90, colors=plt.cm.Pastel2.colors)
-        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-        st.pyplot(fig)
+        fig = px.pie(full_time_part_time_df, values="Count", names="Type", hole=0.2)
+        st.plotly_chart(fig)
 
     if tech_distribution:
         # Display technology distribution
         st.write("### Technology Distribution")
-        st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
+        tech_distribution_df = pd.DataFrame(list(tech_distribution.items()), columns=["Tech", "Count"])
+        tech_fig = px.bar(tech_distribution_df, x="Tech", y="Count", title="Tech Distribution", color="Tech")
+        st.plotly_chart(tech_fig)
+        # st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
+        # Show top 3 techs
         top_techs = sorted(tech_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
         top_techs_df = pd.DataFrame(top_techs, columns=["Technology", "Count"])
         st.write("### TOP Technologies")
-        st.dataframe(top_techs_df)
+        st.dataframe(top_techs_df, hide_index=True)
 
     if role_distribution:
         # Display role distribution
         st.write("### Role Distribution")
-        st.bar_chart(pd.DataFrame.from_dict(role_distribution, orient='index', columns=['Count']))
+        role_distribution_df = pd.DataFrame(list(role_distribution.items()), columns=["Role", "Count"])
+        role_fig = px.bar(role_distribution_df, x="Role", y="Count", title="Role Distribution", color="Role")
+        st.plotly_chart(role_fig)
         # Show top 3 roles
         top_roles = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
         top_roles_df = pd.DataFrame(top_roles, columns=["Role", "Count"])
         st.write("### TOP Roles")
-        st.dataframe(top_roles_df)
+        st.dataframe(top_roles_df, hide_index=True)
 
+    elapsed_time = calculate_elapsed_time(st.session_state.start_time)
+    st.write(f"Data fetched in {elapsed_time}")
 else:
     st.warning("No jobs found.")
