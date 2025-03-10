@@ -1,0 +1,18 @@
+# NOTES
+# ITJOBS API: https://www.itjobs.pt/api
+# pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu118
+# pip install --upgrade typing_extensions
+# spacy download en_core_web_lg
+
+# TODO
+# - Adicionar traduções
+# - Pesquisar descrições por detalhes
+# - Corrigir URL de ofertas (atualmente comentado da tabela)
+# - Adicionar à tabela caso seja "Contrato", "Estágio", etc
+# - Corrigir distribuiçoes de Tech/Roles (estao misturados)
+# - Treinar modelo NER para reconhecimento de TECNOLOGIAS e ROLES
+# - Escolher entre Plotly, Matplotlib e Seaborn para as visualizações
+# - Adicionar botao "Download CSV"
+# - Adicionar descrições nas funções
+# - Editar README
+# - 

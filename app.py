@@ -1,26 +1,9 @@
-# ITJOBS API: https://www.itjobs.pt/api
-# pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu118
-# pip install --upgrade typing_extensions
-# spacy download en_core_web_lg
 from dotenv import load_dotenv
 from datetime import datetime
 import plotly.express as px
 import streamlit as st
 import pandas as pd
 import requests, os, spacy, base64, time
-
-# TODO
-# - Adicionar traduções
-# - Pesquisar descrições por detalhes
-# - Corrigir URL de ofertas (atualmente comentado da tabela)
-# - Adicionar à tabela caso seja "Contrato", "Estágio", etc
-# - Corrigir distribuiçoes de Tech/Roles (estao misturados)
-# - Treinar modelo NER para reconhecimento de TECNOLOGIAS e ROLES
-# - Escolher entre Plotly, Matplotlib e Seaborn para as visualizações
-# - Adicionar botao "Download CSV"
-# - Adicionar descrições nas funções
-# - Editar README
-# - 
 
 # Load environment variables (for API_KEY)
 # load_dotenv()
@@ -31,7 +14,7 @@ st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer", layout="wide"
 st.title("ITJobs Analyzer 🕵️‍♂️💻")
 st.html("<caption>This application uses <b>data</b> from the ITJobs <b>API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to analyze and extract meaningful <b>insights</b> from <b>Portugal's IT job market</b>.</caption>")
 st.html("<b>Disclaimer:</b> This application is for informational purposes only and is not affiliated with ITJobs.pt.")
-st.caption("The data does not necessary represent the entirety of Portugal's job market.")
+st.caption("The data does not necessarily represent the entirety of Portugal's job market.")
 st.markdown(
     f"""
     <div style="display: flex; align-items: center; gap: 20px;">
