@@ -1,17 +1,15 @@
 # pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu118
 # pip install --upgrade typing_extensions
-# spacy download en_core_web_sm
-from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+# spacy download en_core_web_lg
 from dotenv import load_dotenv
 from datetime import datetime
 import matplotlib.pyplot as plt
 import streamlit as st
 import pandas as pd
-import requests, os, torch, spacy
+import requests, os, torch, spacy, base64, time
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # TODO
-# - Verificar uso legal de dados do ITJOBS (Adicionar disclaimer)
 # - Adicionar traduções
 # - Pesquisar descrições por detalhes
 # - Corrigir URL de ofertas (atualmente comentado da tabela)
@@ -20,21 +18,37 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # - Treinar modelo NER para reconhecimento de TECNOLOGIAS e ROLES
 # - 
 
+# Load environment variables (for API_KEY)
+load_dotenv()
+api_key = os.getenv("API_KEY")
+
 st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer", layout="wide")
 st.title("ITJobs Analyzer 🕵️‍♂️💻")
-st.caption("Use AI and Data Visualization techniques to search, analyze, and extract insight from Portugal's IT job market.")
+st.html("<caption>This application uses data from the ITJobs <b>API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to analyze and extract meaningful insights from Portugal's IT job market.</caption>")
+st.html("<b>Disclaimer:</b> This application is for informational purposes only and is not affiliated with ITJobs.pt.")
 st.markdown(
-    """
-    Powered by 
-    <a href="https://www.itjobs.pt/" target="_blank">
-        <img src="https://static.itjobs.pt/images/logo.png" alt="ITJobs" width="100">
-    </a>
+    f"""
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <div>
+            Powered by  
+            <a href="https://www.itjobs.pt/" target="_blank">
+                <img src="https://static.itjobs.pt/images/logo.png" alt="ITJobs" width="90">
+            </a>
+        </div>
+        <div>
+            Developed by  
+            <a href="https://xbdrcx.github.io/" target="_blank">
+                <img src="data:image/x-icon;base64,{base64.b64encode(open("favicon.ico", "rb").read()).decode()}" alt="Bruno Cruz" width="42">
+            </a>
+        </div>
+    </div>
+    <br>
     """,
     unsafe_allow_html=True,
 )
 
 # Load spaCy NLP model
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_lg")
 
 # Define known technologies and roles for better classification
 TECH_KEYWORDS = {"Python", "JavaScript", "React", "Node.js", "Java", "C++", "Docker", "AWS", "Azure", "SQL", "Kubernetes", "TensorFlow", "PyTorch"}
@@ -69,10 +83,6 @@ def extract_entities(text):
     
     return extracted_roles, extracted_techs
 
-# Load environment variables (for API_KEY)
-load_dotenv()
-api_key = os.getenv("API_KEY")
-
 # Function to format the date
 def format_date(date_str):
     if date_str != "N/A":
@@ -86,27 +96,48 @@ def format_date(date_str):
 # Fetch all available cities and their respective location codes
 def fetch_cities():
     url = "https://api.itjobs.pt/location/list.json"
-    params = {
-        "api_key": api_key
-    }
+    params = {"api_key": api_key}
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
     }
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()  # Raise an exception for any HTTP errors
 
+    try:
+        # Making the API request
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+
+        # Check if the response contains the expected data
         if response.status_code == 200:
             data = response.json()
             locations = data.get("results", [])
+            
+            # Check if there are any locations in the response
+            if not locations:
+                st.warning("No locations found in the response.")
+                return {}
+
             # Create a dictionary with location names and their codes
-            locations = {location["name"]: location["id"] for location in locations}
-            return locations
+            locations_dict = {location["name"]: location["id"] for location in locations}
+            return locations_dict
         else:
             st.error(f"Failed to fetch locations. HTTP Status Code: {response.status_code}")
             return {}
+
     except requests.exceptions.RequestException as e:
-        st.error(f"An error occurred: {e}")
+        # Handle request exceptions such as network issues or invalid response
+        st.error(f"An error occurred while fetching locations: {e}")
+        return {}
+    except ValueError as e:
+        # Handle JSON decoding errors
+        st.error(f"Error parsing the response data: {e}")
+        return {}
+    except KeyError as e:
+        # Handle missing keys in the response
+        st.error(f"Error processing the response data: Missing key {e}")
+        return {}
+    except Exception as e:
+        # Catch any unexpected exceptions
+        st.error(f"An unexpected error occurred: {e}")
         return {}
 
 # Fetch job listings and classify as full-time or part-time
@@ -115,6 +146,11 @@ def fetch_all_jobs(location_code=None):
     all_jobs = []
     page = 1
     limit = 100  # Maximum allowed per request
+    max_retries = 3  # Retry mechanism for transient failures
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+    }
 
     while True:
         params = {
@@ -123,34 +159,36 @@ def fetch_all_jobs(location_code=None):
             "page": page,
             "state": 1,
         }
-
         if location_code:
-            params["location"] = location_code  # Use the location code for the request
+            params["location"] = location_code
 
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
-        }
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, headers=headers, params=params, timeout=10)
+                response.raise_for_status()  # Raise an HTTPError for bad responses (4xx, 5xx)
+                data = response.json()
+                
+                jobs = data.get("results", [])
+                if not jobs:
+                    return all_jobs  # No more jobs available
+                
+                all_jobs.extend(jobs)
+                page += 1
+                break  # Exit retry loop on success
 
-        response = requests.get(url, headers=headers, params=params)
+            except requests.exceptions.RequestException as e:
+                print(f"Attempt {attempt + 1}/{max_retries}: Error fetching data - {e}")
+                time.sleep(2 ** attempt)  # Exponential backoff
 
-        if response.status_code != 200:
-            print(f"Error: {response.status_code}")
-            break
-
-        data = response.json()
-        jobs = data.get('results', [])
-
-        if not jobs:
-            break  # No more jobs to fetch
-
-        all_jobs.extend(jobs)
-        page += 1
+        else:
+            print("Max retries reached. Exiting...")
+            break  # Exit the while loop if all retries fail
 
     return all_jobs
 
 # Fetch and select locations
 locations = fetch_cities()
-selected_location_name = st.selectbox("Select a location", ["All"] + list(locations.keys()))
+selected_location_name = st.selectbox("Select location:", ["All"] + list(locations.keys()))
 selected_location_code = locations.get(selected_location_name)
 
 # Fetch job listings
@@ -191,6 +229,8 @@ if jobs:
             "Job Type": job_type,
             "Wage": wage if wage != "null" else "Not disclosed",
             "Allow Remote": allow_remote,
+            # "Extracted Role": ", ".join(roles) if roles else "N/A",
+            # "Extracted Tech": ", ".join(techs) if techs else "N/A",
         })
 
         # Count companies
@@ -234,13 +274,24 @@ if jobs:
         ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
         st.pyplot(fig)
 
-    # Display technology distribution
-    st.write("### Technology Distribution")
-    st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
+    if tech_distribution:
+        # Display technology distribution
+        st.write("### Technology Distribution")
+        st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
+        top_techs = sorted(tech_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_techs_df = pd.DataFrame(top_techs, columns=["Technology", "Count"])
+        st.write("### TOP Technologies")
+        st.dataframe(top_techs_df)
 
-    # Display role distribution
-    st.write("### Role Distribution")
-    st.bar_chart(pd.DataFrame.from_dict(role_distribution, orient='index', columns=['Count']))
+    if role_distribution:
+        # Display role distribution
+        st.write("### Role Distribution")
+        st.bar_chart(pd.DataFrame.from_dict(role_distribution, orient='index', columns=['Count']))
+        # Show top 3 roles
+        top_roles = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_roles_df = pd.DataFrame(top_roles, columns=["Role", "Count"])
+        st.write("### TOP Roles")
+        st.dataframe(top_roles_df)
 
 else:
     st.warning("No jobs found.")
