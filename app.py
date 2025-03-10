@@ -1,21 +1,23 @@
 # pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu118
 # pip install --upgrade typing_extensions
+# spacy download en_core_web_sm
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from dotenv import load_dotenv
 from datetime import datetime
+import matplotlib.pyplot as plt
 import streamlit as st
 import pandas as pd
-import requests, os, torch
+import requests, os, torch, spacy
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # TODO
-# - Adicionar todas as cidades no ITJOBS a uma combobox
-# - Verificar uso legal de dados do ITJOBS
+# - Verificar uso legal de dados do ITJOBS (Adicionar disclaimer)
 # - Adicionar traduções
-# - Adicionar à tabela caso seja "Full-time", "Part-time"
-# - Adicionar à tablea caso seja "Contrato", "Estágio", etc
-# - Pesquisar descrições por detalhes 
-# - Train own model to recognize TECHNOLOGIES and ROLES in Job Titles
+# - Pesquisar descrições por detalhes
+# - Corrigir URL de ofertas (atualmente comentado da tabela)
+# - Adicionar à tabela caso seja "Contrato", "Estágio", etc
+# - Corrigir distribuiçoes de Tech/Roles (estao misturados)
+# - Treinar modelo NER para reconhecimento de TECNOLOGIAS e ROLES
 # - 
 
 st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer", layout="wide")
@@ -31,24 +33,39 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Load the Hugging Face NER model
-tokenizer = AutoTokenizer.from_pretrained("dbmdz/bert-large-cased-finetuned-conll03-english")
-model = AutoModelForTokenClassification.from_pretrained("dbmdz/bert-large-cased-finetuned-conll03-english")
-ner_pipeline = pipeline("ner", model=model, tokenizer=tokenizer)
+# Load spaCy NLP model
+nlp = spacy.load("en_core_web_sm")
+
+# Define known technologies and roles for better classification
+TECH_KEYWORDS = {"Python", "JavaScript", "React", "Node.js", "Java", "C++", "Docker", "AWS", "Azure", "SQL", "Kubernetes", "TensorFlow", "PyTorch"}
+ROLE_KEYWORDS = {"Frontend Developer", "Backend Developer", "Data Scientist", "DevOps Engineer", "Software Engineer", "AI Engineer", "Cloud Architect"}
 
 def extract_entities(text):
-    """Extract named entities from text using the NER model."""
-    entities = ner_pipeline(text)
+    """Extract technologies and roles from job titles."""
+    doc = nlp(text)
     extracted_roles = set()
     extracted_techs = set()
-    
-    for entity in entities:
-        label = entity['entity']
-        word = entity['word']
-        if "MISC" in label or "ORG" in label:  # Example: Organizations/Tech stacks often get labeled as MISC
-            extracted_techs.add(word)
-        elif "PER" in label:  # People/Job Roles sometimes get labeled as PER
-            extracted_roles.add(word)
+
+    # Named Entity Recognition (NER)
+    for ent in doc.ents:
+        # Classify as technology if it's an org, product, or tech-related entity
+        if ent.label_ in ["ORG", "PRODUCT", "TECHNOLOGY"]:
+            extracted_techs.add(ent.text)
+        elif ent.label_ in ["PERSON", "JOB_TITLE", "WORK_OF_ART"]:
+            extracted_roles.add(ent.text)
+
+    # Manual keyword matching (NER may miss some)
+    for tech in TECH_KEYWORDS:
+        if tech.lower() in text.lower():
+            extracted_techs.add(tech)
+    for role in ROLE_KEYWORDS:
+        if role.lower() in text.lower():
+            extracted_roles.add(role)
+
+    # Additional checks for ambiguity (e.g., "React" could be both a tech and a role in some cases)
+    for tech in TECH_KEYWORDS:
+        if tech.lower() in text.lower():
+            extracted_techs.add(tech)
     
     return extracted_roles, extracted_techs
 
@@ -92,7 +109,7 @@ def fetch_cities():
         st.error(f"An error occurred: {e}")
         return {}
 
-# Fetch job listings based on the selected location code
+# Fetch job listings and classify as full-time or part-time
 def fetch_all_jobs(location_code=None):
     url = "https://api.itjobs.pt/job/list.json"
     all_jobs = []
@@ -115,7 +132,7 @@ def fetch_all_jobs(location_code=None):
         }
 
         response = requests.get(url, headers=headers, params=params)
-        
+
         if response.status_code != 200:
             print(f"Error: {response.status_code}")
             break
@@ -128,28 +145,26 @@ def fetch_all_jobs(location_code=None):
 
         all_jobs.extend(jobs)
         page += 1
-    
+
     return all_jobs
 
-# Fetch all available cities
+# Fetch and select locations
 locations = fetch_cities()
 selected_location_name = st.selectbox("Select a location", ["All"] + list(locations.keys()))
 selected_location_code = locations.get(selected_location_name)
 
-# Fetch job listings based on the selected location code
+# Fetch job listings
 jobs = fetch_all_jobs(location_code=selected_location_code if selected_location_name != "All" else None)
 
 if jobs:
-
-    job_offers = []
-    company_counts = {}
-    location_distribution = {}
-    tech_distribution = {}
-    role_distribution = {}
+    # Add the classification of Full-Time vs Part-Time to the job offers table
+    job_offers, company_counts, location_distribution = [], {}, {}
+    tech_distribution, role_distribution = {}, {}
+    full_time_count, part_time_count = 0, 0  # New counters
 
     for job in jobs:
-
         roles, techs = extract_entities(job["title"])
+
         for role in roles:
             role_distribution[role] = role_distribution.get(role, 0) + 1
         for tech in techs:
@@ -159,67 +174,71 @@ if jobs:
             location_distribution[location_name] = location_distribution.get(location_name, 0) + 1
 
         allow_remote = "✅" if job["allowRemote"] else "❌"
+        job_type = "Part-Time"  # Default to Part-Time
+        if "types" in job and job["types"]:
+            job_type = "Full-Time" if job["types"][0]["id"] == "1" else "Part-Time"  # Access job type
+
+        full_time_count = sum(1 for job in jobs if "types" in job and job["types"] and job["types"][0]["id"] == "1")
+        part_time_count = len(jobs) - full_time_count
+
+        wage = job.get("wage", "Not disclosed")
+
         job_offers.append({
             "Job Title": job["title"],
             "Company": job["company"]["name"],
-            "Offer": f'<a href="https://www.itjobs.pt/oferta/{job["id"]}" target="_blank">🔗 Link</a>',
+            # "Offer": f'<a href="https://www.itjobs.pt/oferta/{job["id"]}" target="_blank">🔗 Link</a>',
             "Date Posted": format_date(job.get("updatedAt", "N/A")),
+            "Job Type": job_type,
+            "Wage": wage if wage != "null" else "Not disclosed",
             "Allow Remote": allow_remote,
         })
 
         # Count companies
-        company_name = job["company"]["name"]
-        company_counts[company_name] = company_counts.get(company_name, 0) + 1
+        company_counts[job["company"]["name"]] = company_counts.get(job["company"]["name"], 0) + 1
 
-    # Convert the list of job offers to a pandas DataFrame
+    # Display job offers
     offers_df = pd.DataFrame(job_offers)
-
-    # Remove the index column and make the table re-orderable
     st.write("###", len(jobs), "offer(s) found")
-    st.dataframe(offers_df, use_container_width=True, hide_index=True)  # hide_index=True removes the index column
+    st.dataframe(offers_df, use_container_width=True)
 
-    # Display Company Offer Counts (sorted by number of offers)
+    # Display company counts
     company_counts_df = pd.DataFrame(list(company_counts.items()), columns=["Company", "Number of Offers"])
-    company_counts_df = company_counts_df.sort_values(by="Number of Offers", ascending=False)
-    st.write("###", len(company_counts_df), " unique companies")
-    st.dataframe(company_counts_df.style.hide(axis='index'), use_container_width=True, hide_index=True)  # Removed index
+    st.write("###", len(company_counts_df), "unique companies")
+    st.dataframe(company_counts_df.sort_values(by="Number of Offers", ascending=False), use_container_width=True)
 
-    # Location Distribution Bar Chart (only if "All" is selected)
+    # Location Distribution
     if selected_location_name == "All":
         st.write("### Location Distribution")
-        # st.subheader(f"Top 3 Locations:", sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3])
-
-        # Get the top 3 locations
-        top_3_locations = sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
-
-        # Display the top 3 locations
-        st.write("### Top 3 Locations")
-        if top_3_locations:
-            for location, count in top_3_locations:
-                st.write(f"📍 {location}: {count} offer(s)")
-        else:
-            st.write("No location data available.")
-
         location_df = pd.DataFrame(list(location_distribution.items()), columns=["Location", "Count"])
-        location_df = location_df.sort_values(by="Count", ascending=False)
         st.bar_chart(location_df.set_index("Location"))
 
     # Remote vs Non-Remote job count
     remote_count = sum(1 for job in jobs if job["allowRemote"])
     non_remote_count = len(jobs) - remote_count
 
-    # Show Remote vs Non-Remote bar chart
-    st.write("### Remote vs Non-Remote Jobs")
-    remote_vs_non_remote = pd.DataFrame({
-        "Type": ["Remote", "Non-Remote"],
-        "Count": [remote_count, non_remote_count]
-    })
-    st.bar_chart(remote_vs_non_remote.set_index("Type"))
+    col1, col2 = st.columns(2)
 
-    # Display results in Streamlit
+    with col1:
+        st.write("### Allow-Remote vs. In-Person")
+        remote_vs_non_remote_df = pd.DataFrame({"Type": ["Allow Remote", "In-Person"], "Count": [remote_count, non_remote_count]})
+        fig, ax = plt.subplots()
+        ax.pie(remote_vs_non_remote_df['Count'], labels=remote_vs_non_remote_df['Type'], autopct='%1.1f%%', startangle=90, colors=plt.cm.Pastel2.colors)
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        st.pyplot(fig)
+
+    with col2:
+        st.write("### Full-Time vs. Part-Time")
+        full_time_part_time_df = pd.DataFrame({"Type": ["Full-Time", "Part-Time"], "Count": [full_time_count, part_time_count]})
+        fig, ax = plt.subplots()
+        ax.pie(full_time_part_time_df['Count'], labels=full_time_part_time_df['Type'], autopct='%1.1f%%', startangle=90, colors=plt.cm.Pastel2.colors)
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        st.pyplot(fig)
+
+    # Display technology distribution
     st.write("### Technology Distribution")
     st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
 
+    # Display role distribution
     st.write("### Role Distribution")
     st.bar_chart(pd.DataFrame.from_dict(role_distribution, orient='index', columns=['Count']))
 
