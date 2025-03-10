@@ -18,6 +18,8 @@ import requests, os, spacy, base64, time
 # - Treinar modelo NER para reconhecimento de TECNOLOGIAS e ROLES
 # - Escolher entre Plotly, Matplotlib e Seaborn para as visualizações
 # - Adicionar botao "Download CSV"
+# - Adicionar descrições nas funções
+# - Editar README
 # - 
 
 # Load environment variables (for API_KEY)
