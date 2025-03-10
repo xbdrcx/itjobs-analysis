@@ -6,11 +6,55 @@ import pandas as pd
 import requests, os, spacy, base64, time
 
 # Load environment variables (for API_KEY)
-# load_dotenv()
-# api_key = os.getenv("API_KEY")
-api_key = st.secrets["API_KEY"]
+load_dotenv()
+api_key = os.getenv("API_KEY")
+# api_key = st.secrets["API_KEY"]
 
-st.set_page_config(page_icon="💻", page_title="ITJobs Analyzer", layout="wide")
+st.set_page_config(page_title="ITJobs Analyzer", page_icon="💻", layout="wide")
+
+if st.query_params.get("file") == "sitemap.xml":
+    st.write('<?xml version="1.0" encoding="UTF-8"?>')
+    st.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+
+    pages = [
+        "https://itjobs.streamlit.app",
+    ]
+
+    for page in pages:
+        st.write(f"""
+        <url>
+            <loc>{page}</loc>
+            <lastmod>{datetime.today().strftime('%Y-%m-%d')}</lastmod>
+            <priority>0.8</priority>
+        </url>
+        """)
+
+    st.write("</urlset>")
+    st.stop()
+
+st.markdown(
+    """
+    <!-- Basic SEO Meta Tags -->
+    <meta name="description" content="Find the best IT jobs in Portugal with AI-powered insights. Get real-time job market analysis.">
+    <meta name="keywords" content="IT jobs, Portugal, software developer, AI job analysis">
+    <meta name="author" content="Your Name">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph (OG) for Facebook, LinkedIn -->
+    <meta property="og:title" content="AI-Powered IT Job Analysis">
+    <meta property="og:description" content="Analyze IT job trends, salaries, and skills in Portugal with AI.">
+    <meta property="og:image" content="https://your-app-url.com/preview-image.png">
+    <meta property="og:url" content="https://your-app-url.com">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AI-Powered IT Job Analysis">
+    <meta name="twitter:description" content="Find the best IT jobs and trends in Portugal with AI.">
+    <meta name="twitter:image" content="https://your-app-url.com/preview-image.png">
+    """,
+    unsafe_allow_html=True,
+)
 st.title("ITJobs Analyzer 🕵️‍♂️💻")
 st.html("<caption>This application uses <b>data</b> from the ITJobs <b>API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to analyze and extract meaningful <b>insights</b> from <b>Portugal's IT job market</b>.</caption>")
 st.html("<b>Disclaimer:</b> This application is for informational purposes only and is not affiliated with ITJobs.pt.")
@@ -21,13 +65,13 @@ st.markdown(
         <div>
             Powered by  
             <a href="https://www.itjobs.pt/" target="_blank">
-                <img src="https://static.itjobs.pt/images/logo.png" alt="ITJobs" width="90">
+                <img src="https://static.itjobs.pt/images/logo.png" alt="ITJobs" title="ITJobs" width="90">
             </a>
         </div>
         <div>
             Developed by  
             <a href="https://xbdrcx.github.io/" target="_blank">
-                <img src="data:image/x-icon;base64,{base64.b64encode(open("favicon.ico", "rb").read()).decode()}" alt="Bruno Cruz" width="42">
+                <img src="data:image/x-icon;base64,{base64.b64encode(open("favicon.ico", "rb").read()).decode()}" alt="Bruno Cruz" title="Bruno Cruz" width="42">
             </a>
         </div>
     </div>
