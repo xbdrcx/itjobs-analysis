@@ -230,7 +230,7 @@ if jobs:
             # "Offer": f'<a href="https://www.itjobs.pt/oferta/{job["id"]}" target="_blank">🔗 Link</a>',
             "Date Posted": format_date(job.get("updatedAt", "N/A")),
             "Job Type": job_type,
-            "Wage": wage if wage != "null" else "Not disclosed",
+            # "Wage": wage if wage != "null" else "Not disclosed",
             "Allow Remote": allow_remote,
             # "Extracted Role": ", ".join(roles) if roles else "N/A",
             # "Extracted Tech": ", ".join(techs) if techs else "N/A",
