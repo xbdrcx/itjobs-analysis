@@ -56,7 +56,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.title("ITJobs Analyzer 🕵️‍♂️💻")
-st.html("<caption>This application uses <b>data</b> from the ITJobs <b>API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to analyze and extract meaningful <b>insights</b> from <b>Portugal's IT job market</b>.</caption>")
+st.html("<caption>This application uses <b>data</b> from the <b>ITJobs API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to extract, analyze and present <b>meaningful insights</b> from <b>Portugal's IT job market</b>.</caption>")
 st.html("<b>Disclaimer:</b> This application is for informational purposes only and is not affiliated with ITJobs.pt.")
 st.caption("The data does not necessarily represent the entirety of Portugal's job market.")
 st.markdown(
@@ -349,7 +349,7 @@ if jobs:
         st.dataframe(top_roles_df, hide_index=True)
 
     elapsed_time = calculate_elapsed_time(st.session_state.start_time)
-    st.caption(f"Data fetched in {elapsed_time}")
+    st.caption(f"Data fetched and processed in {elapsed_time}")
 
 else:
     st.warning("No jobs found.")
