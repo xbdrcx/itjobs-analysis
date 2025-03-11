@@ -1,14 +1,34 @@
+from transformers import pipeline
 from dotenv import load_dotenv
 from datetime import datetime
 import plotly.express as px
 import streamlit as st
 import pandas as pd
-import requests, os, spacy, base64, time
+import requests, os, spacy, base64, time, torch
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load environment variables (for API_KEY)
 load_dotenv()
-api_key = os.getenv("API_KEY")
-# api_key = st.secrets["API_KEY"]
+itjobs_key = os.getenv("ITJOBS_API_KEY")
+hf_key = os.getenv("HF_API_KEY")
+# itjobs_key = st.secrets["ITJOBS_API_KEY"]
+# hf_key = st.secrets["HF_API_KEY"]
+
+# Use a smaller, distilled version of BART for summarization (distilBART)
+summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=device)
+
+def summarize_job_description(job_body):
+    # Check if job_body is non-empty and reasonably long
+    if not job_body or len(job_body) < 50:
+        return "Description too short to summarize."
+    
+    # Ensure we don't pass empty or malformed descriptions
+    try:
+        summary = summarizer(job_body, max_length=100, min_length=30, do_sample=False)
+        return summary[0]['summary_text']
+    except Exception as e:
+        print(f"Error summarizing job description: {e}")
+        return "Error generating summary."
 
 st.set_page_config(page_title="ITJobs Analyzer", page_icon="💻", layout="wide")
 
@@ -130,7 +150,7 @@ def format_date(date_str):
 @st.cache_data
 def fetch_cities():
     url = "https://api.itjobs.pt/location/list.json"
-    params = {"api_key": api_key}
+    params = {"api_key": itjobs_key}
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
     }
@@ -189,7 +209,7 @@ def fetch_all_jobs(location_code=None):
 
     while True:
         params = {
-            "api_key": api_key,
+            "api_key": itjobs_key,
             "limit": limit,
             "page": page,
             "state": 1,
@@ -206,7 +226,11 @@ def fetch_all_jobs(location_code=None):
                 jobs = data.get("results", [])
                 if not jobs:
                     return all_jobs  # No more jobs available
-                
+
+                # for job in jobs:
+                #     summarized_description = summarize_job_description(job["body"]) if "body" in job else "No description available."    
+                #     job["summary"] = summarized_description  # Add the summary to the job
+
                 all_jobs.extend(jobs)
                 page += 1
                 break  # Exit retry loop on success
@@ -271,11 +295,13 @@ if jobs:
         job_offers.append({
             "Job Title": job["title"],
             "Company": job["company"]["name"],
+            "Location": ", ".join([loc["name"] for loc in job.get("locations", [])]) if job.get("locations") else "N/A",
             # "Offer": f'<a href="https://www.itjobs.pt/oferta/{job["id"]}" target="_blank">🔗 Link</a>',
             "Date Posted": format_date(job.get("updatedAt", "N/A")),
             "Job Type": job_type,
             # "Wage": wage if wage != "null" else "Not disclosed",
             "Allow Remote": allow_remote,
+            "Summary": job["summary"],
             # "Extracted Role": ", ".join(roles) if roles else "N/A",
             # "Extracted Tech": ", ".join(techs) if techs else "N/A",
         })
@@ -286,7 +312,9 @@ if jobs:
     # Display job offers
     offers_df = pd.DataFrame(job_offers)
     st.write("###", len(jobs), "offer(s) found")
-    st.dataframe(offers_df, use_container_width=True, hide_index=True)
+    st.dataframe(offers_df, use_container_width=True, hide_index=True, row_height=50)
+
+    st.html("<hr>")
 
     # Display company counts
     company_counts_df = pd.DataFrame(list(company_counts.items()), columns=["Company", "Number of Offers"])
@@ -305,6 +333,8 @@ if jobs:
         st.write("### TOP Locations")
         st.dataframe(top_locs_df, hide_index=True)
         
+    st.html("<hr>")
+
     # Remote vs Non-Remote job count
     remote_count = sum(1 for job in jobs if job["allowRemote"])
     non_remote_count = len(jobs) - remote_count
@@ -323,6 +353,8 @@ if jobs:
         fig = px.pie(full_time_part_time_df, values="Count", names="Type", hole=0.2)
         st.plotly_chart(fig)
 
+    st.html("<hr>")
+
     if tech_distribution:
         # Display technology distribution
         st.write("### Technology Distribution")
@@ -335,6 +367,8 @@ if jobs:
         top_techs_df = pd.DataFrame(top_techs, columns=["Technology", "Count"])
         st.write("### TOP Technologies")
         st.dataframe(top_techs_df, hide_index=True)
+
+    st.html("<hr>")
 
     if role_distribution:
         # Display role distribution
