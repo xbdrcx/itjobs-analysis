@@ -1,8 +1,8 @@
-name: Job Market Analysis Cron Job
+name: IT Job Market Analysis Cron Job
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+    - cron: '0 20 * * *'  # Runs daily at 20:00 UTC (which is 19:00 Portugal time during standard time)
 
 jobs:
   job_market_analysis:
@@ -22,4 +22,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run job market analysis script
-        run: python job_market_analysis.py
+        run: python itmarket_cj.py
