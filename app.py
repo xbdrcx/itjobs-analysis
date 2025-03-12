@@ -24,20 +24,20 @@ TECH_KEYWORDS = keywords["technologies"]
 ROLE_KEYWORDS = keywords["tech_roles"]
 
 # Use a smaller, distilled version of BART for summarization (distilBART)
-summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=device)
+# summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=0)
 
-def summarize_job_description(job_body):
-    # Check if job_body is non-empty and reasonably long
-    if not job_body or len(job_body) < 50:
-        return "Description too short to summarize."
+# def summarize_job_description(job_body):
+#     # Check if job_body is non-empty and reasonably long
+#     if not job_body or len(job_body) < 50:
+#         return "Description too short to summarize."
     
-    # Ensure we don't pass empty or malformed descriptions
-    try:
-        summary = summarizer(job_body, max_length=100, min_length=30, do_sample=False)
-        return summary[0]['summary_text']
-    except Exception as e:
-        print(f"Error summarizing job description: {e}")
-        return "Error generating summary."
+#     # Ensure we don't pass empty or malformed descriptions
+#     try:
+#         summary = summarizer(job_body, max_length=100, min_length=30, do_sample=False)
+#         return summary[0]['summary_text']
+#     except Exception as e:
+#         print(f"Error summarizing job description: {e}")
+#         return "Error generating summary."
 
 def extract_entities(text):
     """Extract technologies and roles from job titles."""
