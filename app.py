@@ -12,6 +12,28 @@ hf_key = os.getenv("HF_API_KEY")
 # itjobs_key = st.secrets["ITJOBS_API_KEY"]
 # f_key = st.secrets["HF_API_KEY"]
 
+# API Connection
+API_URL = "https://itjobs-analysis.onrender.com"
+
+# Function to track visit
+def track_visit():
+    response = requests.get(f"{API_URL}/track_visit")
+    if response.status_code == 200:
+        data = response.json()
+        return data
+    else:
+        st.error("Failed to track visit")
+        return None
+
+# Function to track exit
+def track_exit():
+    response = requests.get(f"{API_URL}/track_exit")
+    if response.status_code == 200:
+        return "Exit tracked"
+    else:
+        st.error("Failed to track exit")
+        return None
+
 # Load spaCy NLP model
 nlp = spacy.load("en_core_web_lg")
 
