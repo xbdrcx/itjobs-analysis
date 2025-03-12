@@ -1,4 +1,50 @@
 {
-    "technologies": ["python", "typescript", "react", "docker", "aws", "nodejs", "java", "kubernetes", "sql", "angular", "flutter", "django", "tensorflow", "pytorch"],
-    "roles": ["frontend developer", "backend developer", "data engineer", "data scientist", "full stack developer", "machine learning engineer", "software engineer", "devops engineer", "mobile developer"]
-}  
+    "technologies": [
+      "Python", "JavaScript", "TypeScript", "React", "Node.js", "Vue.js", "Angular", 
+      "Java", "C++", "C#", ".NET", "Ruby", "Ruby on Rails", "PHP", "Go", "Swift", "Kotlin", 
+      "Rust", "Dart", "Flutter", "Objective-C", "Scala", "Perl", "Haskell", "Elixir", 
+      "Shell Scripting", "Bash", "PowerShell", "SQL", "PostgreSQL", "MySQL", "SQLite", 
+      "MongoDB", "Redis", "Cassandra", "GraphQL", "Firebase", "Supabase", "OracleDB", 
+      "Docker", "Kubernetes", "Terraform", "Ansible", "Jenkins", "Git", "GitHub Actions", 
+      "CI/CD", "AWS", "Azure", "Google Cloud Platform", "IBM Cloud", "OpenStack", 
+      "TensorFlow", "PyTorch", "Scikit-Learn", "Keras", "OpenCV", "Hugging Face Transformers", 
+      "FastAPI", "Django", "Flask", "Spring Boot", "Express.js", "NestJS", "Next.js", 
+      "Nuxt.js", "Svelte", "Electron", "Three.js", "WebAssembly", "WebRTC", "GraphQL", 
+      "Apollo", "Prisma", "Web3", "Solidity", "Ethereum", "Bitcoin", "Blockchain", 
+      "RabbitMQ", "Kafka", "Celery", "FastAPI", "Flask", "Django", "Laravel", "ASP.NET", 
+      "Selenium", "Cypress", "Playwright", "JUnit", "Mocha", "Jest", "Pandas", "NumPy", 
+      "Matplotlib", "Seaborn", "Plotly", "Snowflake", "BigQuery", "Airflow", "Sass", "LESS", 
+      "Bootstrap", "Tailwind CSS", "CSS Grid", "Flexbox", "WebRTC", "GraphQL", 
+      "React Native", "Ionic", "Electron", "OpenShift", "Jupyter Notebooks", "Dask", 
+      "Airflow", "Celery", "Jupyter", "Golang", "FastAPI", "TypeORM", "SQLAlchemy", 
+      "WebSocket", "Socket.IO", "Vuex", "Redux", "Firebase", "Firestore", "NoSQL", 
+      "Figma", "Sketch", "Zeplin", "Miro", "WebSockets", "Web3.js", "Three.js", 
+      "Framer Motion", "Cloudflare Workers", "Jamstack", "Cloud Functions"
+    ],
+    "tech_roles": [
+      "Software Engineer", "Backend Developer", "Frontend Developer", "Full Stack Developer", 
+      "Mobile Developer", "iOS Developer", "Android Developer", "Machine Learning Engineer", 
+      "AI Engineer", "Deep Learning Engineer", "Data Scientist", "Data Engineer", 
+      "Data Analyst", "DevOps Engineer", "Site Reliability Engineer", "Cloud Architect", 
+      "Cybersecurity Engineer", "Penetration Tester", "Ethical Hacker", "Blockchain Developer", 
+      "Smart Contract Developer", "Embedded Systems Engineer", "Game Developer", 
+      "Game Engine Developer", "Game Designer", "VR Developer", "AR Developer", 
+      "Systems Engineer", "Network Engineer", "Database Administrator", 
+      "QA Engineer", "Test Automation Engineer", "Software Tester", "Automation Engineer", 
+      "Big Data Engineer", "NLP Engineer", "Computer Vision Engineer", 
+      "Product Manager", "Project Manager", "Technical Program Manager", 
+      "UX/UI Designer", "UX Researcher", "Solutions Architect", 
+      "Firmware Engineer", "Security Engineer", "IoT Engineer", "SEO Specialist", 
+      "Digital Marketer", "Cloud Engineer", "Business Intelligence Developer", 
+      "Blockchain Architect", "API Developer", "MERN Stack Developer", "MEAN Stack Developer", 
+      "Android Engineer", "iOS Engineer", "QA Lead", "Systems Administrator", "Site Reliability Engineer", 
+      "SRE", "Platform Engineer", "Cloud Operations Engineer", "Chatbot Developer", "Voice UX Designer", 
+      "Blockchain Specialist", "Quantum Computing Engineer", "AI Researcher", "Voice Assistant Developer", 
+      "Frontend Architect", "Backend Architect", "Full-Stack Architect", "Chief Technology Officer", 
+      "Chief Data Officer", "Technical Writer", "Product Designer", "Growth Hacker", 
+      "Cloud Security Engineer", "Enterprise Architect", "Business Analyst", "Data Governance Specialist", 
+      "Game Programmer", "Game Artist", "Game Animator", "VR/AR Designer", 
+      "AR/VR Researcher", "AI Trainer", "AI Data Engineer", "AI Data Scientist", "Systems Analyst"
+    ]
+  }
+  

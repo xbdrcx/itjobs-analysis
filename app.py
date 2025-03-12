@@ -4,7 +4,7 @@ from datetime import datetime
 import plotly.express as px
 import streamlit as st
 import pandas as pd
-import requests, os, spacy, base64, time, torch
+import requests, os, spacy, base64, time, torch, json
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load environment variables (for API_KEY)
@@ -13,6 +13,16 @@ itjobs_key = os.getenv("ITJOBS_API_KEY")
 hf_key = os.getenv("HF_API_KEY")
 # itjobs_key = st.secrets["ITJOBS_API_KEY"]
 # hf_key = st.secrets["HF_API_KEY"]
+
+# Load spaCy NLP model
+nlp = spacy.load("en_core_web_lg")
+
+# Load keywords
+with open('keywords.json', 'r') as f:
+    keywords = json.load(f)
+    
+TECH_KEYWORDS = keywords["technologies"]
+ROLE_KEYWORDS = keywords["tech_roles"]
 
 # Use a smaller, distilled version of BART for summarization (distilBART)
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=device)
@@ -29,83 +39,6 @@ def summarize_job_description(job_body):
     except Exception as e:
         print(f"Error summarizing job description: {e}")
         return "Error generating summary."
-
-st.set_page_config(page_title="ITJobs Analyzer", page_icon="💻", layout="wide")
-
-if st.query_params.get("file") == "sitemap.xml":
-    st.write('<?xml version="1.0" encoding="UTF-8"?>')
-    st.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
-
-    pages = [
-        "https://itjobs.streamlit.app",
-    ]
-
-    for page in pages:
-        st.write(f"""
-        <url>
-            <loc>{page}</loc>
-            <lastmod>{datetime.today().strftime('%Y-%m-%d')}</lastmod>
-            <priority>0.8</priority>
-        </url>
-        """)
-
-    st.write("</urlset>")
-    st.stop()
-
-st.markdown(
-    """
-    <!-- Basic SEO Meta Tags -->
-    <meta name="description" content="Find the best IT jobs in Portugal with AI-powered insights. Get real-time job market analysis.">
-    <meta name="keywords" content="IT jobs, Portugal, software developer, AI job analysis">
-    <meta name="author" content="Your Name">
-    <meta name="robots" content="index, follow">
-
-    <!-- Open Graph (OG) for Facebook, LinkedIn -->
-    <meta property="og:title" content="AI-Powered IT Job Analysis">
-    <meta property="og:description" content="Analyze IT job trends, salaries, and skills in Portugal with AI.">
-    <meta property="og:image" content="https://your-app-url.com/preview-image.png">
-    <meta property="og:url" content="https://your-app-url.com">
-    <meta property="og:type" content="website">
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="AI-Powered IT Job Analysis">
-    <meta name="twitter:description" content="Find the best IT jobs and trends in Portugal with AI.">
-    <meta name="twitter:image" content="https://your-app-url.com/preview-image.png">
-    """,
-    unsafe_allow_html=True,
-)
-st.title("ITJobs Analyzer 🕵️‍♂️💻")
-st.html("<caption>This application uses <b>data</b> from the <b>ITJobs API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to extract, analyze and present <b>meaningful insights</b> from <b>Portugal's IT job market</b>.</caption>")
-st.html("<b>Disclaimer:</b> This application is for informational purposes only and is not affiliated with ITJobs.pt.")
-st.caption("The data does not necessarily represent the entirety of Portugal's job market.")
-st.markdown(
-    f"""
-    <div style="display: flex; align-items: center; gap: 20px;">
-        <div>
-            Powered by  
-            <a href="https://www.itjobs.pt/" target="_blank">
-                <img src="https://static.itjobs.pt/images/logo.png" alt="ITJobs" title="ITJobs" width="90">
-            </a>
-        </div>
-        <div>
-            Developed by  
-            <a href="https://xbdrcx.github.io/" target="_blank">
-                <img src="data:image/x-icon;base64,{base64.b64encode(open("favicon.ico", "rb").read()).decode()}" alt="Bruno Cruz" title="Bruno Cruz" width="42">
-            </a>
-        </div>
-    </div>
-    <br>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Load spaCy NLP model
-nlp = spacy.load("en_core_web_lg")
-
-# Define known technologies and roles for better classification
-TECH_KEYWORDS = {"Python", "JavaScript", "React", "Node.js", "Java", "C++", "Docker", "AWS", "Azure", "SQL", "Kubernetes", "TensorFlow", "PyTorch"}
-ROLE_KEYWORDS = {"Frontend Developer", "Backend Developer", "Data Scientist", "DevOps Engineer", "Software Engineer", "AI Engineer", "Cloud Architect"}
 
 def extract_entities(text):
     """Extract technologies and roles from job titles."""
@@ -245,145 +178,219 @@ def fetch_all_jobs(location_code=None):
 
     return all_jobs
 
-# Fetch and select locations
-locations = fetch_cities()
-selected_location_name = st.selectbox("Select location:", ["All"] + list(locations.keys()))
-selected_location_code = locations.get(selected_location_name)
-
 # Function to calculate the elapsed time
 def calculate_elapsed_time(start_time):
     elapsed_time = time.time() - start_time
     return f"{elapsed_time:.2f} seconds"
 
-# Place to store start time
-if 'start_time' not in st.session_state:
-    st.session_state.start_time = time.time()  # Store start time when the app runs
+def main():
+    st.set_page_config(page_title="ITJobs Analyzer", page_icon="💻", layout="wide")
 
-# Measure elapsed time each time the user selects a new option
-st.session_state.start_time = time.time()  # Reset start time when combobox option changes
+    if st.query_params.get("file") == "sitemap.xml":
+        st.write('<?xml version="1.0" encoding="UTF-8"?>')
+        st.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
 
-# Fetch job listings
-jobs = fetch_all_jobs(location_code=selected_location_code if selected_location_name != "All" else None)
+        pages = [
+            "https://itjobs.streamlit.app",
+        ]
 
-if jobs:
-    # Add the classification of Full-Time vs Part-Time to the job offers table
-    job_offers, company_counts, location_distribution = [], {}, {}
-    tech_distribution, role_distribution = {}, {}
-    full_time_count, part_time_count = 0, 0  # New counters
+        for page in pages:
+            st.write(f"""
+            <url>
+                <loc>{page}</loc>
+                <lastmod>{datetime.today().strftime('%Y-%m-%d')}</lastmod>
+                <priority>0.8</priority>
+            </url>
+            """)
 
-    for job in jobs:
-        roles, techs = extract_entities(job["title"])
+        st.write("</urlset>")
+        st.stop()
 
-        for role in roles:
-            role_distribution[role] = role_distribution.get(role, 0) + 1
-        for tech in techs:
-            tech_distribution[tech] = tech_distribution.get(tech, 0) + 1
-        for location in job.get("locations", []):
-            location_name = location["name"]
-            location_distribution[location_name] = location_distribution.get(location_name, 0) + 1
+    st.markdown(
+        """
+        <!-- Basic SEO Meta Tags -->
+        <meta name="description" content="Find the best IT jobs in Portugal with AI-powered insights. Get real-time job market analysis.">
+        <meta name="keywords" content="IT jobs, Portugal, software developer, AI job analysis">
+        <meta name="author" content="Your Name">
+        <meta name="robots" content="index, follow">
 
-        allow_remote = "✅" if job["allowRemote"] else "❌"
-        job_type = "Part-Time"  # Default to Part-Time
-        if "types" in job and job["types"]:
-            job_type = "Full-Time" if job["types"][0]["id"] == "1" else "Part-Time"  # Access job type
+        <!-- Open Graph (OG) for Facebook, LinkedIn -->
+        <meta property="og:title" content="AI-Powered IT Job Analysis">
+        <meta property="og:description" content="Analyze IT job trends, salaries, and skills in Portugal with AI.">
+        <meta property="og:image" content="https://your-app-url.com/preview-image.png">
+        <meta property="og:url" content="https://your-app-url.com">
+        <meta property="og:type" content="website">
 
-        full_time_count = sum(1 for job in jobs if "types" in job and job["types"] and job["types"][0]["id"] == "1")
-        part_time_count = len(jobs) - full_time_count
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="AI-Powered IT Job Analysis">
+        <meta name="twitter:description" content="Find the best IT jobs and trends in Portugal with AI.">
+        <meta name="twitter:image" content="https://your-app-url.com/preview-image.png">
+        """,
+        unsafe_allow_html=True,
+    )
+    st.title("ITJobs Analyzer 🕵️‍♂️💻")
+    st.html("<caption>This application uses <b>data</b> from the <b>ITJobs API</b> along with <b>AI</b> and <b>Data Visualization</b> techniques to extract, analyze and present <b>meaningful insights</b> from <b>Portugal's IT job market</b>.</caption>")
+    st.html("<b>Disclaimer:</b> This application is for informational purposes only and is not affiliated with ITJobs.pt.")
+    st.caption("The data does not necessarily represent the entirety of Portugal's job market.")
+    st.markdown(
+        f"""
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div>
+                Powered by  
+                <a href="https://www.itjobs.pt/" target="_blank">
+                    <img src="https://static.itjobs.pt/images/logo.png" alt="ITJobs" title="ITJobs" width="90">
+                </a>
+            </div>
+            <div>
+                Developed by  
+                <a href="https://xbdrcx.github.io/" target="_blank">
+                    <img src="data:image/x-icon;base64,{base64.b64encode(open("favicon.ico", "rb").read()).decode()}" alt="Bruno Cruz" title="Bruno Cruz" width="42">
+                </a>
+            </div>
+        </div>
+        <br>
+        """,
+        unsafe_allow_html=True,
+    )
+    # Fetch and select locations
+    locations = fetch_cities()
+    selected_location_name = st.selectbox("Select location:", ["All"] + list(locations.keys()))
+    selected_location_code = locations.get(selected_location_name)
 
-        wage = job.get("wage", "Not disclosed")
+    # Place to store start time
+    if 'start_time' not in st.session_state:
+        st.session_state.start_time = time.time()  # Store start time when the app runs
 
-        job_offers.append({
-            "Job Title": job["title"],
-            "Company": job["company"]["name"],
-            "Location": ", ".join([loc["name"] for loc in job.get("locations", [])]) if job.get("locations") else "N/A",
-            # "Offer": f'<a href="https://www.itjobs.pt/oferta/{job["id"]}" target="_blank">🔗 Link</a>',
-            "Date Posted": format_date(job.get("updatedAt", "N/A")),
-            "Job Type": job_type,
-            # "Wage": wage if wage != "null" else "Not disclosed",
-            "Allow Remote": allow_remote,
-            "Summary": job["summary"],
-            # "Extracted Role": ", ".join(roles) if roles else "N/A",
-            # "Extracted Tech": ", ".join(techs) if techs else "N/A",
-        })
+    # Measure elapsed time each time the user selects a new option
+    st.session_state.start_time = time.time()  # Reset start time when combobox option changes
 
-        # Count companies
-        company_counts[job["company"]["name"]] = company_counts.get(job["company"]["name"], 0) + 1
+    # Fetch job listings
+    jobs = fetch_all_jobs(location_code=selected_location_code if selected_location_name != "All" else None)
 
-    # Display job offers
-    offers_df = pd.DataFrame(job_offers)
-    st.write("###", len(jobs), "offer(s) found")
-    st.dataframe(offers_df, use_container_width=True, hide_index=True, row_height=50)
+    if jobs:
+        # Add the classification of Full-Time vs Part-Time to the job offers table
+        job_offers, company_counts, location_distribution = [], {}, {}
+        tech_distribution, role_distribution = {}, {}
+        full_time_count, part_time_count = 0, 0  # New counters
 
-    st.html("<hr>")
+        for job in jobs:
+            roles, techs = extract_entities(job["title"])
 
-    # Display company counts
-    company_counts_df = pd.DataFrame(list(company_counts.items()), columns=["Company", "Number of Offers"])
-    st.write("###", len(company_counts_df), "unique companies")
-    st.dataframe(company_counts_df.sort_values(by="Number of Offers", ascending=False), use_container_width=True, hide_index=True)
+            for role in roles:
+                role_distribution[role] = role_distribution.get(role, 0) + 1
+            for tech in techs:
+                tech_distribution[tech] = tech_distribution.get(tech, 0) + 1
+            for location in job.get("locations", []):
+                location_name = location["name"]
+                location_distribution[location_name] = location_distribution.get(location_name, 0) + 1
 
-    # Location Distribution
-    if selected_location_name == "All":
-        st.write("### Location Distribution")
-        location_df = pd.DataFrame(list(location_distribution.items()), columns=["Location", "Count"])
-        tech_fig = px.bar(location_df, x="Location", y="Count", color="Location")
-        st.plotly_chart(tech_fig)
-        # Show top 3 techs
-        top_loc = sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
-        top_locs_df = pd.DataFrame(top_loc, columns=["Location", "Count"])  # Explicitly set the column names
-        st.write("### TOP Locations")
-        st.dataframe(top_locs_df, hide_index=True)
-        
-    st.html("<hr>")
+            allow_remote = "✅" if job["allowRemote"] else "❌"
+            job_type = "Part-Time"  # Default to Part-Time
+            if "types" in job and job["types"]:
+                job_type = "Full-Time" if job["types"][0]["id"] == "1" else "Part-Time"  # Access job type
 
-    # Remote vs Non-Remote job count
-    remote_count = sum(1 for job in jobs if job["allowRemote"])
-    non_remote_count = len(jobs) - remote_count
+            full_time_count = sum(1 for job in jobs if "types" in job and job["types"] and job["types"][0]["id"] == "1")
+            part_time_count = len(jobs) - full_time_count
 
-    col1, col2 = st.columns(2)
+            wage = job.get("wage", "Not disclosed")
 
-    with col1:
-        st.write("### Allow-Remote vs. In-Person")
-        remote_vs_non_remote_df = pd.DataFrame({"Type": ["Allow Remote", "In-Person"], "Count": [remote_count, non_remote_count]})
-        fig = px.pie(remote_vs_non_remote_df, values="Count", names="Type", hole=0.2)
-        st.plotly_chart(fig)
+            job_offers.append({
+                "Job Title": job["title"],
+                "Company": job["company"]["name"],
+                "Location": ", ".join([loc["name"] for loc in job.get("locations", [])]) if job.get("locations") else "N/A",
+                # "Offer": f'<a href="https://www.itjobs.pt/oferta/{job["id"]}" target="_blank">🔗 Link</a>',
+                "Date Posted": format_date(job.get("updatedAt", "N/A")),
+                "Job Type": job_type,
+                # "Wage": wage if wage != "null" else "Not disclosed",
+                "Allow Remote": allow_remote,
+                #"Summary": job["summary"],
+                # "Extracted Role": ", ".join(roles) if roles else "N/A",
+                # "Extracted Tech": ", ".join(techs) if techs else "N/A",
+            })
 
-    with col2:
-        st.write("### Full-Time vs. Part-Time")
-        full_time_part_time_df = pd.DataFrame({"Type": ["Full-Time", "Part-Time"], "Count": [full_time_count, part_time_count]})
-        fig = px.pie(full_time_part_time_df, values="Count", names="Type", hole=0.2)
-        st.plotly_chart(fig)
+            # Count companies
+            company_counts[job["company"]["name"]] = company_counts.get(job["company"]["name"], 0) + 1
 
-    st.html("<hr>")
+        # Display job offers
+        offers_df = pd.DataFrame(job_offers)
+        st.write("###", len(jobs), "offer(s) found")
+        st.dataframe(offers_df, use_container_width=True, hide_index=True, row_height=50)
 
-    if tech_distribution:
-        # Display technology distribution
-        st.write("### Technology Distribution")
-        tech_distribution_df = pd.DataFrame(list(tech_distribution.items()), columns=["Tech", "Count"])
-        tech_fig = px.bar(tech_distribution_df, x="Tech", y="Count", color="Tech")
-        st.plotly_chart(tech_fig)
-        # st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
-        # Show top 3 techs
-        top_techs = sorted(tech_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
-        top_techs_df = pd.DataFrame(top_techs, columns=["Technology", "Count"])
-        st.write("### TOP Technologies")
-        st.dataframe(top_techs_df, hide_index=True)
+        st.html("<hr>")
 
-    st.html("<hr>")
+        # Display company counts
+        company_counts_df = pd.DataFrame(list(company_counts.items()), columns=["Company", "Number of Offers"])
+        st.write("###", len(company_counts_df), "unique companies")
+        st.dataframe(company_counts_df.sort_values(by="Number of Offers", ascending=False), use_container_width=True, hide_index=True)
 
-    if role_distribution:
-        # Display role distribution
-        st.write("### Role Distribution")
-        role_distribution_df = pd.DataFrame(list(role_distribution.items()), columns=["Role", "Count"])
-        role_fig = px.bar(role_distribution_df, x="Role", y="Count", color="Role")
-        st.plotly_chart(role_fig)
-        # Show top 3 roles
-        top_roles = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
-        top_roles_df = pd.DataFrame(top_roles, columns=["Role", "Count"])
-        st.write("### TOP Roles")
-        st.dataframe(top_roles_df, hide_index=True)
+        # Location Distribution
+        if selected_location_name == "All":
+            st.write("### Location Distribution")
+            location_df = pd.DataFrame(list(location_distribution.items()), columns=["Location", "Count"])
+            tech_fig = px.bar(location_df, x="Location", y="Count", color="Location")
+            st.plotly_chart(tech_fig)
+            # Show top 3 techs
+            top_loc = sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
+            top_locs_df = pd.DataFrame(top_loc, columns=["Location", "Count"])  # Explicitly set the column names
+            st.write("### TOP Locations")
+            st.dataframe(top_locs_df, hide_index=True)
+            
+        st.html("<hr>")
 
-    elapsed_time = calculate_elapsed_time(st.session_state.start_time)
-    st.caption(f"Data fetched and processed in {elapsed_time}")
+        # Remote vs Non-Remote job count
+        remote_count = sum(1 for job in jobs if job["allowRemote"])
+        non_remote_count = len(jobs) - remote_count
 
-else:
-    st.warning("No jobs found.")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.write("### Allow-Remote vs. In-Person")
+            remote_vs_non_remote_df = pd.DataFrame({"Type": ["Allow Remote", "In-Person"], "Count": [remote_count, non_remote_count]})
+            fig = px.pie(remote_vs_non_remote_df, values="Count", names="Type", hole=0.2)
+            st.plotly_chart(fig)
+
+        with col2:
+            st.write("### Full-Time vs. Part-Time")
+            full_time_part_time_df = pd.DataFrame({"Type": ["Full-Time", "Part-Time"], "Count": [full_time_count, part_time_count]})
+            fig = px.pie(full_time_part_time_df, values="Count", names="Type", hole=0.2)
+            st.plotly_chart(fig)
+
+        st.html("<hr>")
+
+        if tech_distribution:
+            # Display technology distribution
+            st.write("### Technology Distribution")
+            tech_distribution_df = pd.DataFrame(list(tech_distribution.items()), columns=["Tech", "Count"])
+            tech_fig = px.bar(tech_distribution_df, x="Tech", y="Count", color="Tech")
+            st.plotly_chart(tech_fig)
+            # st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
+            # Show top 3 techs
+            top_techs = sorted(tech_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
+            top_techs_df = pd.DataFrame(top_techs, columns=["Technology", "Count"])
+            st.write("### TOP Technologies")
+            st.dataframe(top_techs_df, hide_index=True)
+
+        st.html("<hr>")
+
+        if role_distribution:
+            # Display role distribution
+            st.write("### Role Distribution")
+            role_distribution_df = pd.DataFrame(list(role_distribution.items()), columns=["Role", "Count"])
+            role_fig = px.bar(role_distribution_df, x="Role", y="Count", color="Role")
+            st.plotly_chart(role_fig)
+            # Show top 3 roles
+            top_roles = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
+            top_roles_df = pd.DataFrame(top_roles, columns=["Role", "Count"])
+            st.write("### TOP Roles")
+            st.dataframe(top_roles_df, hide_index=True)
+
+        elapsed_time = calculate_elapsed_time(st.session_state.start_time)
+        st.caption(f"Data fetched and processed in {elapsed_time}")
+
+    else:
+        st.warning("No jobs found.")
+    return
+
+if __name__ == "__main__":
+    main()
