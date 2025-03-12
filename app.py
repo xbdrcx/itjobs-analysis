@@ -1,3 +1,4 @@
+from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from dotenv import load_dotenv
 from datetime import datetime
 import plotly.express as px
@@ -6,11 +7,11 @@ import pandas as pd
 import requests, os, spacy, base64, time, json, re
 
 # Load environment variables (for API_KEY)
-# load_dotenv()
-# itjobs_key = os.getenv("ITJOBS_API_KEY")
-# hf_key = os.getenv("HF_API_KEY")
-itjobs_key = st.secrets["ITJOBS_API_KEY"]
-hf_key = st.secrets["HF_API_KEY"]
+load_dotenv()
+itjobs_key = os.getenv("ITJOBS_API_KEY")
+hf_key = os.getenv("HF_API_KEY")
+# itjobs_key = st.secrets["ITJOBS_API_KEY"]
+# hf_key = st.secrets["HF_API_KEY"]
 
 # API Connection
 API_URL = "https://itjobs-analysis.onrender.com"
@@ -33,6 +34,10 @@ def track_exit():
     else:
         st.error("Failed to track exit")
         return None
+
+# Load pre-trained GPT-Neo model and tokenizer
+model = GPTNeoForCausalLM.from_pretrained("EleutherAI/gpt-neo-1.3B")
+tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-neo-1.3B")
 
 # Load spaCy NLP model
 nlp = spacy.load("en_core_web_lg")
@@ -356,7 +361,7 @@ def main():
             loc_fig = px.bar(location_df, x="Location", y="Count", color="Location")
             loc_fig.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(loc_fig)
-            # Show top 3 techs
+            # Show top 3 locations
             top_loc = sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
             top_locs_df = pd.DataFrame(top_loc, columns=["Location", "Count"])  # Explicitly set the column names
             st.write("### TOP Locations")
@@ -385,7 +390,6 @@ def main():
         st.html("<hr>")
 
         if tech_distribution:
-            # Display technology distribution
             st.write("### TOP 10 Technologies")
             tech_distribution_sorted = sorted(tech_distribution.items(), key=lambda x: x[1], reverse=True)[:10]
             tech_distribution_df = pd.DataFrame(tech_distribution_sorted, columns=["Tech", "Count"])
@@ -393,16 +397,31 @@ def main():
             tech_fig.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(tech_fig)
 
+        # prompt = "Here are the top 10 most used technologies today:\n"
+        # prompt += "\n".join([x[0] for x in tech_distribution_sorted])  # Add the list of technologies
+        # prompt += "\n\nExplain why these technologies are popular, mentioning their main use cases and industry adoption trends:\n\nAnswer:"
+        # input_ids = tokenizer.encode(prompt, return_tensors="pt")
+        # output = model.generate(input_ids, max_length=250, min_length=100, num_return_sequences=1, no_repeat_ngram_size=2, top_p=0.92, temperature=0.7, do_sample=True)
+        # gen_techs = tokenizer.decode(output[0], skip_special_tokens=True)
+        # st.write(gen_techs)
+
         st.html("<hr>")
 
         if role_distribution:
-            # Display role distribution
             st.write("### TOP 10 Roles")
             role_distribution_sorted = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:10]
             role_distribution_df = pd.DataFrame(role_distribution_sorted, columns=["Role", "Count"])
             role_fig = px.bar(role_distribution_df, x="Role", y="Count", color="Role")
             role_fig.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(role_fig)
+
+        # prompt = "Here are the top 10 most relevant IT job roles today:\n"
+        # prompt += "\n".join([x[0] for x in role_distribution_sorted])  # Add the list of technologies
+        # prompt += "\n\nExplain why these tech roles are popular, mentioning their main use cases and industry adoption trends:\n\nAnswer:"
+        # input_ids = tokenizer.encode(prompt, return_tensors="pt")
+        # output = model.generate(input_ids, max_length=250, min_length=100, num_return_sequences=1, no_repeat_ngram_size=2, top_p=0.92, temperature=0.7, do_sample=True)
+        # gen_roles = tokenizer.decode(output[0], skip_special_tokens=True)
+        # st.write(gen_roles)
 
         st.html("<hr>")
 
