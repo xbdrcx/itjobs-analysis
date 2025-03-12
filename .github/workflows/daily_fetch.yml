@@ -1,13 +1,15 @@
-name: Daily API Fetch
+name: Job Market Analysis Cron Job
+
 on:
   schedule:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
 
 jobs:
-  fetch_data:
+  job_market_analysis:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -16,7 +18,8 @@ jobs:
           python-version: '3.9'
 
       - name: Install dependencies
-        run: pip install requests sqlite3
+        run: |
+          pip install -r requirements.txt
 
-      - name: Run script
-        run: python daily_fetch.py
+      - name: Run job market analysis script
+        run: python job_market_analysis.py

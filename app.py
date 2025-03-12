@@ -1,10 +1,9 @@
-from transformers import pipeline
 from dotenv import load_dotenv
 from datetime import datetime
 import plotly.express as px
 import streamlit as st
 import pandas as pd
-import requests, os, spacy, base64, time, json
+import requests, os, spacy, base64, time, json, re
 
 # Load environment variables (for API_KEY)
 load_dotenv()
@@ -182,6 +181,23 @@ def calculate_elapsed_time(start_time):
     elapsed_time = time.time() - start_time
     return f"{elapsed_time:.2f} seconds"
 
+def extract_job_level(job_title):
+    # Define patterns for job levels in the job title
+    levels = {
+        "Junior": r"\bjunior\b", 
+        "Mid-level": r"\bmid[-\s]*level\b", 
+        "Senior": r"\bsenior\b"
+    }
+    
+    job_level = "Unknown"  # Default value if no level is found
+
+    for level, pattern in levels.items():
+        if re.search(pattern, job_title, re.IGNORECASE):
+            job_level = level
+            break
+
+    return job_level
+
 def main():
     st.set_page_config(page_title="ITJobs Analyzer", page_icon="💻", layout="wide")
 
@@ -272,9 +288,13 @@ def main():
         job_offers, company_counts, location_distribution = [], {}, {}
         tech_distribution, role_distribution = {}, {}
         full_time_count, part_time_count = 0, 0  # New counters
+        level_distribution = {"Junior": 0, "Mid-level": 0, "Senior": 0, "Unknown": 0}  # Track levels
 
         for job in jobs:
             roles, techs = extract_entities(job["title"])
+            # Extract job level
+            job_level = extract_job_level(job["title"])
+            level_distribution[job_level] += 1
 
             for role in roles:
                 role_distribution[role] = role_distribution.get(role, 0) + 1
@@ -327,8 +347,9 @@ def main():
         if selected_location_name == "All":
             st.write("### Location Distribution")
             location_df = pd.DataFrame(list(location_distribution.items()), columns=["Location", "Count"])
-            tech_fig = px.bar(location_df, x="Location", y="Count", color="Location")
-            st.plotly_chart(tech_fig)
+            loc_fig = px.bar(location_df, x="Location", y="Count", color="Location")
+            loc_fig.update_xaxes(categoryorder='category ascending')
+            st.plotly_chart(loc_fig)
             # Show top 3 techs
             top_loc = sorted(location_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
             top_locs_df = pd.DataFrame(top_loc, columns=["Location", "Count"])  # Explicitly set the column names
@@ -362,6 +383,7 @@ def main():
             st.write("### Technology Distribution")
             tech_distribution_df = pd.DataFrame(list(tech_distribution.items()), columns=["Tech", "Count"])
             tech_fig = px.bar(tech_distribution_df, x="Tech", y="Count", color="Tech")
+            tech_fig.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(tech_fig)
             # st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
             # Show top 3 techs
@@ -377,6 +399,7 @@ def main():
             st.write("### Role Distribution")
             role_distribution_df = pd.DataFrame(list(role_distribution.items()), columns=["Role", "Count"])
             role_fig = px.bar(role_distribution_df, x="Role", y="Count", color="Role")
+            role_fig.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(role_fig)
             # Show top 3 roles
             top_roles = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
@@ -384,12 +407,20 @@ def main():
             st.write("### TOP Roles")
             st.dataframe(top_roles_df, hide_index=True)
 
+        st.html("<hr>")
+
+        # Job Level Distribution (Junior, Mid-level, Senior)
+        st.write("### Job Level Distribution")
+        level_df = pd.DataFrame(list(level_distribution.items()), columns=["Level", "Count"])
+        level_fig = px.bar(level_df, x="Level", y="Count", color="Level")
+        level_fig.update_xaxes(categoryorder='category ascending')
+        st.plotly_chart(level_fig)
+
         elapsed_time = calculate_elapsed_time(st.session_state.start_time)
         st.caption(f"Data fetched and processed in {elapsed_time}")
 
     else:
         st.warning("No jobs found.")
-    return
 
 if __name__ == "__main__":
     main()
