@@ -44,24 +44,8 @@ with open('keywords.json', 'r') as f:
 TECH_KEYWORDS = keywords["technologies"]
 ROLE_KEYWORDS = keywords["tech_roles"]
 
-# Use a smaller, distilled version of BART for summarization (distilBART)
-# summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=0)
-
-# def summarize_job_description(job_body):
-#     # Check if job_body is non-empty and reasonably long
-#     if not job_body or len(job_body) < 50:
-#         return "Description too short to summarize."
-    
-#     # Ensure we don't pass empty or malformed descriptions
-#     try:
-#         summary = summarizer(job_body, max_length=100, min_length=30, do_sample=False)
-#         return summary[0]['summary_text']
-#     except Exception as e:
-#         print(f"Error summarizing job description: {e}")
-#         return "Error generating summary."
-
 def extract_entities(text):
-    """Extract technologies and roles from job titles."""
+    """Extract technologies and roles from job titles, ensuring they aren't mixed up."""
     doc = nlp(text)
     extracted_roles = set()
     extracted_techs = set()
@@ -87,7 +71,11 @@ def extract_entities(text):
         if tech.lower() in text.lower():
             extracted_techs.add(tech)
     
-    return extracted_roles, extracted_techs
+    # Remove any roles that appear in tech and vice versa
+    final_roles = {role for role in extracted_roles if not any(tech.lower() in role.lower() for tech in extracted_techs)}
+    final_techs = {tech for tech in extracted_techs if not any(role.lower() in tech.lower() for role in extracted_roles)}
+
+    return final_roles, final_techs
 
 # Function to format the date
 def format_date(date_str):
@@ -179,10 +167,6 @@ def fetch_all_jobs(location_code=None):
                 jobs = data.get("results", [])
                 if not jobs:
                     return all_jobs  # No more jobs available
-
-                # for job in jobs:
-                #     summarized_description = summarize_job_description(job["body"]) if "body" in job else "No description available."    
-                #     job["summary"] = summarized_description  # Add the summary to the job
 
                 all_jobs.extend(jobs)
                 page += 1
@@ -402,37 +386,28 @@ def main():
 
         if tech_distribution:
             # Display technology distribution
-            st.write("### Technology Distribution")
-            tech_distribution_df = pd.DataFrame(list(tech_distribution.items()), columns=["Tech", "Count"])
+            st.write("### TOP 10 Technologies")
+            tech_distribution_sorted = sorted(tech_distribution.items(), key=lambda x: x[1], reverse=True)[:10]
+            tech_distribution_df = pd.DataFrame(tech_distribution_sorted, columns=["Tech", "Count"])
             tech_fig = px.bar(tech_distribution_df, x="Tech", y="Count", color="Tech")
             tech_fig.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(tech_fig)
-            # st.bar_chart(pd.DataFrame.from_dict(tech_distribution, orient='index', columns=['Count']))
-            # Show top 3 techs
-            top_techs = sorted(tech_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
-            top_techs_df = pd.DataFrame(top_techs, columns=["Technology", "Count"])
-            st.write("### TOP Technologies")
-            st.dataframe(top_techs_df, hide_index=True)
 
         st.html("<hr>")
 
         if role_distribution:
             # Display role distribution
-            st.write("### Role Distribution")
-            role_distribution_df = pd.DataFrame(list(role_distribution.items()), columns=["Role", "Count"])
+            st.write("### TOP 10 Roles")
+            role_distribution_sorted = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:10]
+            role_distribution_df = pd.DataFrame(role_distribution_sorted, columns=["Role", "Count"])
             role_fig = px.bar(role_distribution_df, x="Role", y="Count", color="Role")
             role_fig.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(role_fig)
-            # Show top 3 roles
-            top_roles = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
-            top_roles_df = pd.DataFrame(top_roles, columns=["Role", "Count"])
-            st.write("### TOP Roles")
-            st.dataframe(top_roles_df, hide_index=True)
 
         st.html("<hr>")
 
         # Job Level Distribution (Junior, Mid-level, Senior)
-        st.write("### Job Level Distribution")
+        st.write("### Job-Level Distribution")
         level_df = pd.DataFrame(list(level_distribution.items()), columns=["Level", "Count"])
         level_fig = px.bar(level_df, x="Level", y="Count", color="Level")
         level_fig.update_xaxes(categoryorder='category ascending')
