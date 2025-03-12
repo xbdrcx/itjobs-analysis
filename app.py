@@ -4,8 +4,7 @@ from datetime import datetime
 import plotly.express as px
 import streamlit as st
 import pandas as pd
-import requests, os, spacy, base64, time, torch, json
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import requests, os, spacy, base64, time, json
 
 # Load environment variables (for API_KEY)
 # load_dotenv()
