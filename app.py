@@ -8,11 +8,11 @@ import requests, os, spacy, base64, time, torch, json
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load environment variables (for API_KEY)
-load_dotenv()
-itjobs_key = os.getenv("ITJOBS_API_KEY")
-hf_key = os.getenv("HF_API_KEY")
-# itjobs_key = st.secrets["ITJOBS_API_KEY"]
-# hf_key = st.secrets["HF_API_KEY"]
+# load_dotenv()
+# itjobs_key = os.getenv("ITJOBS_API_KEY")
+# hf_key = os.getenv("HF_API_KEY")
+itjobs_key = st.secrets["ITJOBS_API_KEY"]
+f_key = st.secrets["HF_API_KEY"]
 
 # Load spaCy NLP model
 nlp = spacy.load("en_core_web_lg")
