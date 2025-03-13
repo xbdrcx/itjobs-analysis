@@ -390,7 +390,7 @@ def main():
         st.html("<hr>")
 
         if tech_distribution:
-            st.write("### TOP 10 Technologies")
+            st.write("### Top Technologies")
             tech_distribution_sorted = sorted(tech_distribution.items(), key=lambda x: x[1], reverse=True)[:10]
             tech_distribution_df = pd.DataFrame(tech_distribution_sorted, columns=["Tech", "Count"])
             tech_fig = px.bar(tech_distribution_df, x="Tech", y="Count", color="Tech")
@@ -408,7 +408,7 @@ def main():
         st.html("<hr>")
 
         if role_distribution:
-            st.write("### TOP 10 Roles")
+            st.write("### Top Roles")
             role_distribution_sorted = sorted(role_distribution.items(), key=lambda x: x[1], reverse=True)[:10]
             role_distribution_df = pd.DataFrame(role_distribution_sorted, columns=["Role", "Count"])
             role_fig = px.bar(role_distribution_df, x="Role", y="Count", color="Role")
