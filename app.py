@@ -6,12 +6,12 @@ import streamlit as st
 import pandas as pd
 import requests, os, spacy, base64, time, json, re
 
-# Load environment variables (for API_KEY)
-load_dotenv()
-itjobs_key = os.getenv("ITJOBS_API_KEY")
-hf_key = os.getenv("HF_API_KEY")
-# itjobs_key = st.secrets["ITJOBS_API_KEY"]
-# hf_key = st.secrets["HF_API_KEY"]
+# # Load environment variables (for API_KEY)
+# load_dotenv()
+# itjobs_key = os.getenv("ITJOBS_API_KEY")
+# hf_key = os.getenv("HF_API_KEY")
+itjobs_key = st.secrets["ITJOBS_API_KEY"]
+hf_key = st.secrets["HF_API_KEY"]
 
 # API Connection
 API_URL = "https://itjobs-analysis.onrender.com"
