@@ -1,4 +1,6 @@
-# ITJobs Analysis
+# ITJobs Analyzer
+
+ITJobs Analyzer uses data from the ITJobs API along with AI and Data Visualization techniques to extract, analyze and present meaningful insights from Portugal's IT job market.
 
 https://itjobs.streamlit.app
 
