@@ -1,4 +1,3 @@
-from transformers import GPTNeoForCausalLM, GPT2Tokenizer
 from dotenv import load_dotenv
 from datetime import datetime
 import plotly.express as px
@@ -34,11 +33,7 @@ def track_exit():
     else:
         st.error("Failed to track exit")
         return None
-
-# Load pre-trained GPT-Neo model and tokenizer
-model = GPTNeoForCausalLM.from_pretrained("EleutherAI/gpt-neo-1.3B")
-tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-neo-1.3B")
-
+    
 # Load spaCy NLP model
 nlp = spacy.load("en_core_web_lg")
 
