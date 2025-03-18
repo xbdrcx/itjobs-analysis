@@ -1,13 +1,27 @@
 from app import fetch_all_jobs
 from transformers import pipeline
 from datetime import datetime
-import sqlite3, torch
+import sqlite3, torch, requests
 
 # Load a local summarization model (e.g., BART or T5)
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn", device=0 if torch.cuda.is_available() else -1)
 
 # Max token length the model can handle
 MAX_INPUT_LENGTH = 1024  # Change this to your model's max token length
+
+# Your Streamlit app URL (replace this with your actual Streamlit app URL)
+STREAMLIT_APP_URL = "https://your-streamlit-app-url"
+
+def ping_streamlit_app():
+    """Send a GET request to the Streamlit app to prevent it from going to sleep."""
+    try:
+        response = requests.get(STREAMLIT_APP_URL)
+        if response.status_code == 200:
+            print("Streamlit app is alive!")
+        else:
+            print(f"Failed to ping Streamlit app, status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error pinging Streamlit app: {e}")
 
 def chunk_text(text, max_length=MAX_INPUT_LENGTH):
     """Chunks a long text into smaller parts that fit within the model's max token length."""
@@ -96,4 +110,5 @@ def fetch_and_store_data():
     conn.close()
 
 if __name__ == "__main__":
+    ping_streamlit_app()
     fetch_and_store_data()
