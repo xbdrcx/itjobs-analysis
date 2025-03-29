@@ -1,16 +1,16 @@
-from app import fetch_all_jobs
+# from app import fetch_all_jobs
 from transformers import pipeline
 from datetime import datetime
 import sqlite3, torch, requests
 
 # Load a local summarization model (e.g., BART or T5)
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn", device=0 if torch.cuda.is_available() else -1)
+# summarizer = pipeline("summarization", model="facebook/bart-large-cnn", device=0 if torch.cuda.is_available() else -1)
 
 # Max token length the model can handle
 MAX_INPUT_LENGTH = 1024  # Change this to your model's max token length
 
 # Your Streamlit app URL (replace this with your actual Streamlit app URL)
-STREAMLIT_APP_URL = "https://your-streamlit-app-url"
+STREAMLIT_APP_URL = "https://itjobs.streamlit.app"
 
 def ping_streamlit_app():
     """Send a GET request to the Streamlit app to prevent it from going to sleep."""
@@ -45,70 +45,70 @@ def chunk_text(text, max_length=MAX_INPUT_LENGTH):
 
     return chunked_text
 
-def summarize_titles_with_local_model(data):
-    # Extract only the job titles
-    titles = [job['title'] for job in data]
+# def summarize_titles_with_local_model(data):
+#     # Extract only the job titles
+#     titles = [job['title'] for job in data]
 
-    # Prepare the job titles to summarize
-    prompt = "Summarize the following job titles to understand the job market trends:\n"
+#     # Prepare the job titles to summarize
+#     prompt = "Summarize the following job titles to understand the job market trends:\n"
     
-    # Add all job titles to the prompt
-    prompt += "\n".join(titles)
+#     # Add all job titles to the prompt
+#     prompt += "\n".join(titles)
 
-    # Chunk the text into smaller parts
-    chunks = chunk_text(prompt, max_length=MAX_INPUT_LENGTH)
+#     # Chunk the text into smaller parts
+#     chunks = chunk_text(prompt, max_length=MAX_INPUT_LENGTH)
     
-    summaries = []
-    for chunk in chunks:
-        try:
-            # Summarize each chunk of job titles
-            summary = summarizer(chunk, max_length=150, min_length=50, do_sample=False)
-            summaries.append(summary[0]['summary_text'])
-            print(f"Generated Summary for chunk: {summary[0]['summary_text']}")
-        except Exception as e:
-            print(f"Error summarizing chunk: {e}")
-            summaries.append("Error generating summary.")
+#     summaries = []
+#     for chunk in chunks:
+#         try:
+#             # Summarize each chunk of job titles
+#             summary = summarizer(chunk, max_length=150, min_length=50, do_sample=False)
+#             summaries.append(summary[0]['summary_text'])
+#             print(f"Generated Summary for chunk: {summary[0]['summary_text']}")
+#         except Exception as e:
+#             print(f"Error summarizing chunk: {e}")
+#             summaries.append("Error generating summary.")
     
-    # Combine all summaries into a final result
-    final_summary = " ".join(summaries)
-    return final_summary
+#     # Combine all summaries into a final result
+#     final_summary = " ".join(summaries)
+#     return final_summary
 
-def fetch_and_store_data():
-    conn = sqlite3.connect('itjobs_analysis.db')
-    c = conn.cursor()
+# def fetch_and_store_data():
+#     conn = sqlite3.connect('itjobs_analysis.db')
+#     c = conn.cursor()
     
-    c.execute(''' 
-        CREATE TABLE IF NOT EXISTS itjobs_analysis (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            offer_count INTEGER,
-            analysis_text TEXT,
-            date TEXT
-        )
-    ''')
+#     c.execute(''' 
+#         CREATE TABLE IF NOT EXISTS itjobs_analysis (
+#             id INTEGER PRIMARY KEY AUTOINCREMENT,
+#             offer_count INTEGER,
+#             analysis_text TEXT,
+#             date TEXT
+#         )
+#     ''')
     
-    conn.commit()
+#     conn.commit()
 
-    # Fetch the job data
-    data = fetch_all_jobs()
+#     # Fetch the job data
+#     data = fetch_all_jobs()
 
-    # Check if the fetched data is a list (as expected)
-    if isinstance(data, list):
-        # Analyze with the local summarization model (only job titles)
-        analysis_text = summarize_titles_with_local_model(data)
+#     # Check if the fetched data is a list (as expected)
+#     if isinstance(data, list):
+#         # Analyze with the local summarization model (only job titles)
+#         analysis_text = summarize_titles_with_local_model(data)
 
-        # Insert the job count for today and the analysis text into the database
-        c.execute(''' 
-            INSERT INTO itjobs_analysis (offer_count, analysis_text, date) 
-            VALUES (?, ?, ?)
-        ''', (len(data), analysis_text, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+#         # Insert the job count for today and the analysis text into the database
+#         c.execute(''' 
+#             INSERT INTO itjobs_analysis (offer_count, analysis_text, date) 
+#             VALUES (?, ?, ?)
+#         ''', (len(data), analysis_text, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
-        # Commit and close the connection
-        conn.commit()
-    else:
-        print("Error: fetched data is not in the expected format.")
+#         # Commit and close the connection
+#         conn.commit()
+#     else:
+#         print("Error: fetched data is not in the expected format.")
 
-    conn.close()
+#     conn.close()
 
 if __name__ == "__main__":
     ping_streamlit_app()
-    fetch_and_store_data()
+    # fetch_and_store_data()
