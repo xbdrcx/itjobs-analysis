@@ -16,4 +16,12 @@ Data Visualization, or Data Viz, is the practice of transforming data into visua
 
 ---
 
+The repository includes:
+
+<code>app.py</code> - Main file with Streamlit application code.
+
+<code>keywords.json</code> - JSON file containing Technology and Role keywords.
+
+---
+
 MIT License, Copyright (c) 2025 Bruno Cruz - see the [LICENSE](LICENSE) file for details.
